@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-booking-api
+    environment:
+      - PORT=${PORT}
+    ports:
+      - '${PORT}:${PORT}'
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    networks:
+      - smart-booking-net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:alpine
+    container_name: smart-booking-redis
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - smart-booking-net
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  smart-booking-net:
+    driver: bridge
+
+volumes:
+  redis_data:
