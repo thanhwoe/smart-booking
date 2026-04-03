@@ -132,11 +132,11 @@ All endpoints require `Authorization: Bearer <clerk_jwt>` header except where no
 
 | Method | Endpoint        | Description              |
 | ------ | --------------- | ------------------------ |
-| GET    | `/slots`        | Danh sách slot khả dụng  |
-| GET    | `/slots/:id`    | Chi tiết slot            |
-| POST   | `/bookings`     | Tạo booking mới          |
-| GET    | `/bookings`     | Lịch sử booking của user |
-| GET    | `/bookings/:id` | Chi tiết booking         |
+| GET    | `/slots`        | Get all slots            |
+| GET    | `/slots/:id`    | Get slot by id           |
+| POST   | `/bookings`     | Create new booking       |
+| GET    | `/bookings`     | Get all bookings of user |
+| GET    | `/bookings/:id` | Get booking by id        |
 | DELETE | `/bookings/:id` | Cancel booking           |
 
 ### Payments
