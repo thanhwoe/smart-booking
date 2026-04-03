@@ -1,98 +1,183 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Smart Booking Platform
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Tech Stack
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+| Layer        | Technology                |
+| ------------ | ------------------------- |
+| Framework    | NestJS + TypeScript       |
+| Database     | PostgreSQL + Prisma ORM   |
+| Auth         | Clerk                     |
+| Cache / Lock | Redis (ioredis + Redlock) |
+| Queue        | BullMQ                    |
+| Payment      | Stripe                    |
+| Email        | Resend                    |
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Architecture Overview
 
-## Project setup
-
-```bash
-$ yarn install
+```
+Client
+  │
+  ▼
+NestJS API
+  ├── Auth guard (Clerk JWT)
+  ├── Rate limiter (Redis)
+  ├── Booking module
+  │     ├── Redlock → acquire lock on slotId
+  │     ├── Prisma transaction → check capacity + create booking
+  │     └── Release lock
+  ├── Payment module
+  │     ├── Stripe Checkout Session
+  │     └── Webhook handler (idempotency via stripe_events table)
+  └── Queue (BullMQ)
+        ├── email-confirm job → Resend
+        ├── email-reminder job → Resend
+        └── Cron: cancel expired PENDING bookings
 ```
 
-## Compile and run the project
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- Docker + Docker Compose
+- Stripe CLI (for local webhook testing)
+- Clerk account
+- Resend account
+
+### 1. Clone & install
 
 ```bash
-# development
-$ yarn run start
+git clone https://gitlab.asoft-python.com/thanh.nguyentrung/nestjs-training.git
+git checkout feature/smart-booking
 
-# watch mode
-$ yarn run start:dev
+cd smart-booking
 
-# production mode
-$ yarn run start:prod
+yarn install
 ```
 
-## Run tests
+### 2. Environment variables
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+cp .env.example .env
 ```
 
-## Deployment
+```env
+# Database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/smart_booking"
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+# Redis
+REDIS_URL="redis://localhost:6379"
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+# Clerk
+CLERK_SECRET_KEY=sk_test_...
+CLERK_WEBHOOK_SECRET=whsec_...
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Resend
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# App
+APP_URL=http://localhost:3000
+```
+
+### 3. Start infrastructure
 
 ```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+docker compose up -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+This starts PostgreSQL on port `5432` and Redis on port `6379`.
 
-## Resources
+### 4. Run migrations
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 5. Start the app
 
-## Support
+```bash
+# Development
+npm run start:dev
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Production
+npm run build
+npm run start:prod
+```
 
-## Stay in touch
+### 6. Test Stripe webhooks locally
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+stripe listen --forward-to localhost:3000/payments/webhook
+```
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## API Reference
+
+### Auth
+
+All endpoints require `Authorization: Bearer <clerk_jwt>` header except where noted.
+
+### Bookings
+
+| Method | Endpoint        | Description              |
+| ------ | --------------- | ------------------------ |
+| GET    | `/slots`        | Danh sách slot khả dụng  |
+| GET    | `/slots/:id`    | Chi tiết slot            |
+| POST   | `/bookings`     | Tạo booking mới          |
+| GET    | `/bookings`     | Lịch sử booking của user |
+| GET    | `/bookings/:id` | Chi tiết booking         |
+| DELETE | `/bookings/:id` | Cancel booking           |
+
+### Payments
+
+| Method | Endpoint                        | Description                    |
+| ------ | ------------------------------- | ------------------------------ |
+| POST   | `/payments/checkout/:bookingId` | Create Stripe Checkout Session |
+| POST   | `/payments/webhook`             | Stripe webhook (no auth)       |
+| POST   | `/payments/refund/:bookingId`   | Refund booking                 |
+
+## Project Structure
+
+```
+src/
+├── auth/                 # Clerk JWT guard, webhook sync
+├── users/                # User module
+├── services/             # Service module
+├── slots/                # Slot CRUD
+├── bookings/             # Core booking logic + Redlock
+├── payments/             # Stripe checkout + webhook
+├── queue/                # BullMQ workers (email, reminder)
+├── email/                # Resend email templates
+├── cron/                 # Expired booking cleanup
+├── cache/                # Redis caching helpers
+└── common/               # Guards, interceptors, filters
+prisma/
+└── schema.prisma
+docker-compose.yml
+```
+
+---
+
+## Running Tests
+
+```bash
+# Unit tests
+npm run test
+
+# Integration tests (requires running DB + Redis)
+npm run test:e2e
+
+# Race condition test — 50 concurrent requests to same slot
+npm run test:race
+```
