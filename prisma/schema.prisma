@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum SlotStatus {
+  AVAILABLE
+  FULL
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique @map("clerk_id")
+  email     String   @unique
+  name      String
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  bookings  Booking[]
+  slots     Slot[]    @relation("ProviderSlots")
+
+  @@map("users")
+}
+
+model Service {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  durationMinutes Int      @map("duration_minutes")
+  price           Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  slots Slot[]
+
+  @@map("services")
+}
+
+model Slot {
+  id          String     @id @default(uuid())
+  serviceId   String     @map("service_id")
+  providerId  String     @map("provider_id")
+  startTime   DateTime   @map("start_time")
+  endTime     DateTime   @map("end_time")
+  capacity    Int        @default(1)
+  bookedCount Int        @default(0) @map("booked_count")
+  status      SlotStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  service  Service   @relation(fields: [serviceId], references: [id])
+  provider User      @relation("ProviderSlots", fields: [providerId], references: [id])
+  bookings Booking[]
+
+  @@index([startTime, endTime])
+  @@index([serviceId, startTime])
+  @@index([providerId, startTime])
+  @@map("slots")
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  slotId          String        @map("slot_id")
+  status          BookingStatus @default(PENDING)
+  idempotencyKey  String        @unique @map("idempotency_key")
+  expiresAt       DateTime      @map("expires_at")
+  confirmedAt     DateTime?     @map("confirmed_at")
+  cancelledAt     DateTime?     @map("cancelled_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  slot    Slot     @relation(fields: [slotId], references: [id])
+  payment Payment?
+
+  @@index([userId])
+  @@index([slotId, status])
+  @@index([status, expiresAt]) // cho cron job query PENDING + expired
+  @@map("bookings")
+}
+
+model Payment {
+  id                   String        @id @default(uuid())
+  bookingId            String        @unique @map("booking_id")
+  stripeSessionId      String?       @unique @map("stripe_session_id")
+  stripePaymentIntent  String?       @unique @map("stripe_payment_intent")
+  amount               Decimal       @db.Decimal(10, 2)
+  currency             String        @default("usd")
+  status               PaymentStatus @default(PENDING)
+  paidAt               DateTime?     @map("paid_at")
+  refundedAt           DateTime?     @map("refunded_at")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("payments")
+}
+
+model StripeEvent {
+  id            String    @id @default(uuid())
+  stripeEventId String    @unique @map("stripe_event_id")
+  eventType     String    @map("event_type")
+  processed     Boolean   @default(false)
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([processed])
+  @@map("stripe_events")
+}

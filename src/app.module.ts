@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { minutes, seconds, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PrismaModule } from './database/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       ],
     }),
     ScheduleModule.forRoot(),
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
