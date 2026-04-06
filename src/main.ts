@@ -10,10 +10,11 @@ import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from './filters/prisma-exceptions.filter';
-import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -60,8 +61,6 @@ async function bootstrap() {
       },
     }),
   );
-
-  app.useGlobalInterceptors(new ErrorLoggingInterceptor());
 
   app.enableShutdownHooks();
 

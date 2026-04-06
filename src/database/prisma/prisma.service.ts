@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { PrismaClient } from '@app/generated/prisma/client';
+import { PostHogService } from '@app/modules/shared/posthog/posthog.service';
 import {
   Injectable,
   Logger,
@@ -16,7 +17,10 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly postHogService: PostHogService,
+  ) {
     const adapter = new PrismaPg({
       connectionString: configService.getOrThrow<string>('DATABASE_URL'),
     });
@@ -30,12 +34,33 @@ export class PrismaService
       ],
     });
 
-    if (configService.getOrThrow<string>('NODE_ENV') === 'development') {
+    if (configService.get<string>('NODE_ENV') === 'development') {
       this.$on('query' as never, (e: { query: string; duration: number }) => {
-        this.logger.debug(`Query: ${e.query}`);
-        this.logger.debug(`Duration: ${e.duration}ms`);
+        // this.logger.debug(`Query: ${e.query}`);
+        // this.logger.debug(`Duration: ${e.duration}ms`);
+
+        postHogService.capture({
+          event: 'query',
+          distinctId: 'system',
+          properties: {
+            query: e.query,
+            duration: e.duration,
+          },
+        });
       });
     }
+    //  else {
+    //   this.$on('query' as never, (e: { query: string; duration: number }) => {
+    //     postHogService.capture({
+    //       event: 'query',
+    //       distinctId: 'system',
+    //       properties: {
+    //         query: e.query,
+    //         duration: e.duration,
+    //       },
+    //     });
+    //   });
+    // }
   }
 
   async onModuleInit() {
