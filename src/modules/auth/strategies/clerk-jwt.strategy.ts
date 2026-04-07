@@ -28,7 +28,7 @@ export class ClerkJwtStrategy extends PassportStrategy(Strategy, 'clerk-jwt') {
 
   async validate(req: Request) {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-    if (!token) throw new UnauthorizedException('No token provided');
+    if (!token) throw new UnauthorizedException('No auth token provided');
 
     try {
       const payload = await verifyToken(token, {

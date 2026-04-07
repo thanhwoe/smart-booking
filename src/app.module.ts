@@ -13,6 +13,8 @@ import { RolesGuard } from './guards/roles.guard';
 import { PostHogInterceptor } from './interceptors/post-hog.interceptor';
 import { SharedModule } from './modules/shared/shared.module';
 import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
+import { SlotsModule } from './modules/slots/slots.module';
+import { ServicesModule } from './modules/services/services.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { ErrorLoggingInterceptor } from './interceptors/error-logging.intercepto
     AuthModule,
     UsersModule,
     SharedModule,
+    SlotsModule,
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [

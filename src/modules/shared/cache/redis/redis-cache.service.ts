@@ -61,14 +61,6 @@ export class RedisCacheService implements ICacheService {
     await this.client.del(key);
   }
 
-  // ─── Fetch-or-compute with stampede protection ───────────────────
-  //
-  // Problem: if 100 requests miss cache simultaneously, all 100 call
-  // fetcher() → thundering herd / cache stampede.
-  //
-  // Solution: deduplicate in-flight fetcher calls using a Promise map.
-  // All concurrent callers for the same key share one fetcher Promise.
-
   async wrap<T>(
     key: string,
     ttlSeconds: number,
