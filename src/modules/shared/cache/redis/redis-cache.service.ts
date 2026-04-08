@@ -6,7 +6,6 @@ import { RedisClient } from '../../redis/redis.config';
 @Injectable()
 export class RedisCacheService implements ICacheService {
   private readonly logger = new Logger(RedisCacheService.name);
-  private readonly client: Redis;
 
   // In-memory map to deduplicate concurrent fetcher calls per key
   private readonly inflightMap = new Map<string, Promise<any>>();
@@ -15,28 +14,26 @@ export class RedisCacheService implements ICacheService {
     @Inject(RedisClient)
     private readonly redisClient: Redis,
   ) {
-    this.client = redisClient;
-
-    this.client.on('error', (err) =>
+    redisClient.on('error', (err) =>
       this.logger.error(`Redis cache error: ${err.message}`),
     );
 
-    this.client.on('reconnecting', () =>
+    redisClient.on('reconnecting', () =>
       this.logger.warn(`Redis cache reconnecting...`),
     );
   }
 
   async onModuleInit(): Promise<void> {
-    await this.client.ping();
+    await this.redisClient.ping();
     this.logger.log('Redis cache connected');
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.client.quit();
+    await this.redisClient.quit();
   }
 
   async get<T>(key: string): Promise<T | null> {
-    const raw = await this.client.get(key);
+    const raw = await this.redisClient.get(key);
     if (raw === null) return null;
 
     try {
@@ -51,14 +48,14 @@ export class RedisCacheService implements ICacheService {
     const serialized = JSON.stringify(value);
 
     if (ttlSeconds && ttlSeconds > 0) {
-      await this.client.set(key, serialized, 'EX', ttlSeconds);
+      await this.redisClient.set(key, serialized, 'EX', ttlSeconds);
     } else {
-      await this.client.set(key, serialized);
+      await this.redisClient.set(key, serialized);
     }
   }
 
   async del(key: string): Promise<void> {
-    await this.client.del(key);
+    await this.redisClient.del(key);
   }
 
   async wrap<T>(

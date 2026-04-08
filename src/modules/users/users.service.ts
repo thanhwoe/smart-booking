@@ -1,12 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersRepository } from './users.repository';
 import { paginate, PaginationDto } from '@app/utils/pagination';
+import { CLERK_CLIENT } from '../auth/clerk/clerk-client.provider';
+import type { ClerkClient } from '@clerk/backend';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    @Inject(CLERK_CLIENT)
+    private readonly clerkClient: ClerkClient,
+  ) {}
 
   create(createUserDto: CreateUserDto) {
     return this.usersRepository.create(createUserDto);
@@ -23,15 +29,22 @@ export class UsersService {
     return paginate(data, total, page, limit);
   }
 
-  findOne(id: string) {
-    return this.usersRepository.findById(id);
+  async findOne(id: string) {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
+    }
+    return user;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
     return this.usersRepository.update(id, updateUserDto);
   }
 
-  remove(id: string) {
+  async remove(id: string) {
+    const user = await this.findOne(id);
+    await this.clerkClient.users.deleteUser(user.clerkId);
     return this.usersRepository.delete(id);
   }
 
@@ -39,7 +52,13 @@ export class UsersService {
     return this.usersRepository.syncClerkUser(data);
   }
 
-  deleteByClerkId(clerkId: string) {
+  async deleteByClerkId(clerkId: string) {
+    const user = await this.findByClerkId(clerkId);
+
+    if (!user) {
+      return null;
+    }
+
     return this.usersRepository.deleteByClerkId(clerkId);
   }
 

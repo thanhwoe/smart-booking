@@ -6,5 +6,6 @@ import { SlotsRepository } from './slots.repository';
 @Module({
   controllers: [SlotsController],
   providers: [SlotsService, SlotsRepository],
+  exports: [SlotsService],
 })
 export class SlotsModule {}
