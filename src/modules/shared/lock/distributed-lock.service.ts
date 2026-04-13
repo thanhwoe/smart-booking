@@ -9,7 +9,7 @@ import Redlock, { CompatibleRedisClient, Lock } from 'redlock';
 import type Redis from 'ioredis';
 import { RedisClient } from '../redis/redis.config';
 import { ConfigService } from '@nestjs/config';
-import { PostHogService } from '../posthog/posthog.service';
+import { TrackService } from '../track/track.service';
 
 @Injectable()
 export class DistributedLockService implements OnModuleInit {
@@ -21,7 +21,7 @@ export class DistributedLockService implements OnModuleInit {
     @Inject(RedisClient)
     private readonly redisClient: Redis,
     private readonly configService: ConfigService,
-    private readonly postHogService: PostHogService,
+    private readonly trackService: TrackService,
   ) {}
 
   onModuleInit() {
@@ -37,7 +37,7 @@ export class DistributedLockService implements OnModuleInit {
 
     this.redlock.on('clientError', (error: Error) => {
       if (!error.message.includes('The operation was unable to achieve')) {
-        this.postHogService.capture({
+        this.trackService.capture({
           distinctId: 'system',
           event: 'lock_error',
           properties: {
@@ -73,7 +73,7 @@ export class DistributedLockService implements OnModuleInit {
     } finally {
       try {
         await lock.unlock();
-        this.postHogService.capture({
+        this.trackService.capture({
           distinctId: 'system',
           event: 'lock_released',
           properties: {
@@ -82,7 +82,7 @@ export class DistributedLockService implements OnModuleInit {
         });
         this.logger.debug(`Lock released: ${resource}`);
       } catch (error) {
-        this.postHogService.capture({
+        this.trackService.capture({
           distinctId: 'system',
           event: 'lock_release_warning',
           properties: {

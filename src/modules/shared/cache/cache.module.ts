@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { RedisCacheService } from './redis/redis-cache.service';
+import { CacheService } from './cache.service';
 import { ICacheService } from '@app/interfaces/cache.interface';
 
 @Module({
   providers: [
-    RedisCacheService,
+    CacheService,
     {
       provide: ICacheService,
-      useExisting: RedisCacheService,
+      useExisting: CacheService,
     },
   ],
   exports: [ICacheService],

@@ -56,7 +56,9 @@ export const ModelName = {
   Slot: 'Slot',
   Booking: 'Booking',
   Payment: 'Payment',
-  StripeEvent: 'StripeEvent'
+  StripeEvent: 'StripeEvent',
+  EmailLog: 'EmailLog',
+  EmailSuppression: 'EmailSuppression'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -162,6 +164,44 @@ export const StripeEventScalarFieldEnum = {
 } as const
 
 export type StripeEventScalarFieldEnum = (typeof StripeEventScalarFieldEnum)[keyof typeof StripeEventScalarFieldEnum]
+
+
+export const EmailLogScalarFieldEnum = {
+  id: 'id',
+  resendEmailId: 'resendEmailId',
+  bookingId: 'bookingId',
+  userId: 'userId',
+  toEmail: 'toEmail',
+  subject: 'subject',
+  jobName: 'jobName',
+  status: 'status',
+  bounceType: 'bounceType',
+  bounceCode: 'bounceCode',
+  bounceReason: 'bounceReason',
+  sentAt: 'sentAt',
+  deliveredAt: 'deliveredAt',
+  bouncedAt: 'bouncedAt',
+  complainedAt: 'complainedAt',
+  openedAt: 'openedAt',
+  clickedAt: 'clickedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailLogScalarFieldEnum = (typeof EmailLogScalarFieldEnum)[keyof typeof EmailLogScalarFieldEnum]
+
+
+export const EmailSuppressionScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  reason: 'reason',
+  source: 'source',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailSuppressionScalarFieldEnum = (typeof EmailSuppressionScalarFieldEnum)[keyof typeof EmailSuppressionScalarFieldEnum]
 
 
 export const SortOrder = {

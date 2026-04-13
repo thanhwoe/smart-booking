@@ -40,6 +40,24 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum EmailStatus {
+  QUEUED           
+  SENT             
+  DELIVERED        
+  DELIVERY_DELAYED 
+  BOUNCED          
+  COMPLAINED       
+  FAILED          
+}
+
+enum SuppressionReason {
+  HARD_BOUNCE 
+  SOFT_BOUNCE 
+  COMPLAINT   
+  MANUAL      
+}
+
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique @map("clerk_id")
@@ -52,6 +70,7 @@ model User {
 
   bookings  Booking[]
   slots     Slot[]    @relation("ProviderSlots")
+  emailLogs EmailLog[]
 
   @@map("users")
 }
@@ -108,10 +127,12 @@ model Booking {
   user    User     @relation(fields: [userId], references: [id])
   slot    Slot     @relation(fields: [slotId], references: [id])
   payment Payment?
+  emailLogs EmailLog[]
+
 
   @@index([userId])
   @@index([slotId, status])
-  @@index([status, expiresAt]) // cho cron job query PENDING + expired
+  @@index([status, expiresAt])
   @@map("bookings")
 }
 
@@ -143,4 +164,53 @@ model StripeEvent {
 
   @@index([processed])
   @@map("stripe_events")
+}
+
+model EmailLog {
+  id            String      @id @default(uuid())
+  resendEmailId String?     @unique @map("resend_email_id")
+  bookingId     String?     @map("booking_id")
+  userId        String?     @map("user_id")
+  toEmail       String      @map("to_email")
+  subject       String
+  jobName       String      @map("job_name")
+  status        EmailStatus @default(QUEUED)
+
+  bounceType    String?     @map("bounce_type")
+  bounceCode    String?     @map("bounce_code")
+  bounceReason  String?     @map("bounce_reason")
+
+  sentAt        DateTime?   @map("sent_at")
+  deliveredAt   DateTime?   @map("delivered_at")
+  bouncedAt     DateTime?   @map("bounced_at")
+  complainedAt  DateTime?   @map("complained_at")
+  openedAt      DateTime?   @map("opened_at")
+  clickedAt     DateTime?   @map("clicked_at")
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
+
+  @@index([resendEmailId])
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+  @@index([toEmail])
+  @@map("email_logs")
+}
+
+
+model EmailSuppression {
+  id        String            @id @default(uuid())
+  email     String            @unique 
+  reason    SuppressionReason
+  source    String            
+  notes     String?           
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@map("email_suppressions")
 }

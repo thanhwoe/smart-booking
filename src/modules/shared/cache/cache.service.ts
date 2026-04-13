@@ -1,11 +1,11 @@
 import { ICacheService } from '@app/interfaces/cache.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
-import { RedisClient } from '../../redis/redis.config';
+import { RedisClient } from '../redis/redis.config';
 
 @Injectable()
-export class RedisCacheService implements ICacheService {
-  private readonly logger = new Logger(RedisCacheService.name);
+export class CacheService implements ICacheService {
+  private readonly logger = new Logger(CacheService.name);
 
   // In-memory map to deduplicate concurrent fetcher calls per key
   private readonly inflightMap = new Map<string, Promise<any>>();

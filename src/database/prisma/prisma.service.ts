@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { PrismaClient } from '@app/generated/prisma/client';
-import { PostHogService } from '@app/modules/shared/posthog/posthog.service';
+import { TrackService } from '@app/modules/shared/track/track.service';
 import {
   Injectable,
   Logger,
@@ -19,7 +19,7 @@ export class PrismaService
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly postHogService: PostHogService,
+    private readonly trackService: TrackService,
   ) {
     const adapter = new PrismaPg({
       connectionString: configService.getOrThrow<string>('DATABASE_URL'),
@@ -39,7 +39,7 @@ export class PrismaService
         // this.logger.debug(`Query: ${e.query}`);
         // this.logger.debug(`Duration: ${e.duration}ms`);
 
-        postHogService.capture({
+        trackService.capture({
           event: 'query',
           distinctId: 'system',
           properties: {

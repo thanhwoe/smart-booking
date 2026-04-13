@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DistributedLockService } from './distributed-lock.service';
-import { PostHogModule } from '../posthog/posthog.module';
+import { PostHogModule } from '../track/posthog/posthog.module';
 
 @Module({
   imports: [PostHogModule],

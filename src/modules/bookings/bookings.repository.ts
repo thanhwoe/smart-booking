@@ -17,6 +17,22 @@ import { PrismaService } from '@app/database/prisma/prisma.service';
 
 type CreateBookingData = Pick<Booking, 'slotId' | 'userId' | 'idempotencyKey'>;
 
+type BookingCanceled = {
+  id: string;
+  slotId: string;
+  user: {
+    name: string;
+    email: string;
+    id: string;
+  };
+  slot: {
+    service: {
+      name: string;
+    };
+    startTime: Date;
+  };
+};
+
 interface IBookingRepository {
   create(data: CreateBookingData): Promise<Booking>;
   update(id: string, data: BookingUpdateInput): Promise<Booking>;
@@ -29,8 +45,8 @@ interface IBookingRepository {
     status?: BookingStatus;
     userId?: string;
   }): Promise<[Booking[], number]>;
-  cancel(id: string): Promise<Booking>;
-  cancelExpired(): Promise<void>;
+  cancel(id: string): Promise<BookingCanceled>;
+  cancelExpired(): Promise<BookingCanceled[]>;
 }
 
 @Injectable()
@@ -143,7 +159,7 @@ export class BookingsRepository implements IBookingRepository {
     ]);
   }
 
-  cancel(id: string): Promise<Booking> {
+  cancel(id: string): Promise<BookingCanceled> {
     return this.prisma.$transaction(async (tx) => {
       const updatedBooking = await tx.booking.update({
         where: { id },
@@ -151,6 +167,7 @@ export class BookingsRepository implements IBookingRepository {
           status: BookingStatus.CANCELLED,
           cancelledAt: new Date(),
         },
+        select: this.select(),
       });
 
       await tx.slot.update({
@@ -164,7 +181,7 @@ export class BookingsRepository implements IBookingRepository {
       return updatedBooking;
     });
   }
-  cancelExpired(): Promise<void> {
+  cancelExpired(): Promise<BookingCanceled[]> {
     return this.prisma.$transaction(async (tx) => {
       const bookings = await tx.booking.findMany({
         where: {
@@ -173,10 +190,7 @@ export class BookingsRepository implements IBookingRepository {
             lt: new Date(),
           },
         },
-        select: {
-          slotId: true,
-          id: true,
-        },
+        select: this.select(),
       });
 
       await tx.booking.updateMany({
@@ -196,6 +210,7 @@ export class BookingsRepository implements IBookingRepository {
           status: SlotStatus.AVAILABLE,
         },
       });
+      return bookings;
     });
   }
 
@@ -208,6 +223,30 @@ export class BookingsRepository implements IBookingRepository {
         },
       },
       payment: true,
+    };
+  }
+
+  private select() {
+    return {
+      slotId: true,
+      id: true,
+      user: {
+        select: {
+          email: true,
+          name: true,
+          id: true,
+        },
+      },
+      slot: {
+        select: {
+          service: {
+            select: {
+              name: true,
+            },
+          },
+          startTime: true,
+        },
+      },
     };
   }
 }

@@ -10,12 +10,13 @@ import { UsersModule } from './modules/users/users.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { PostHogInterceptor } from './interceptors/post-hog.interceptor';
+import { TrackInterceptor } from './interceptors/track.interceptor';
 import { SharedModule } from './modules/shared/shared.module';
 import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
 import { SlotsModule } from './modules/slots/slots.module';
 import { ServicesModule } from './modules/services/services.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
+import { EmailLogsModule } from './modules/email-logs/email-logs.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
     SlotsModule,
     ServicesModule,
     BookingsModule,
+    EmailLogsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -60,7 +62,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: PostHogInterceptor,
+      useClass: TrackInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

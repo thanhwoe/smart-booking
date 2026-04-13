@@ -1,4 +1,4 @@
-import { PostHogService } from '@app/modules/shared/posthog/posthog.service';
+import { TrackService } from '@app/modules/shared/track/track.service';
 import {
   Injectable,
   NestInterceptor,
@@ -14,7 +14,7 @@ import { catchError } from 'rxjs/operators';
 export class ErrorLoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(ErrorLoggingInterceptor.name);
   constructor(
-    private readonly posthog: PostHogService,
+    private readonly trackService: TrackService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -24,7 +24,7 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       catchError((err) => {
-        this.posthog.error(err, {
+        this.trackService.error(err, {
           distinctId: 'system',
           properties: {
             error: err.message,

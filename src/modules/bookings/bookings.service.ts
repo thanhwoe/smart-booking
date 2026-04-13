@@ -17,6 +17,7 @@ import { SlotsService } from '../slots/slots.service';
 import { DistributedLockService } from '../shared/lock/distributed-lock.service';
 import { paginate, PaginationDto } from '@app/utils/pagination';
 import { QueryBookingDto } from './dto/query-booking.dto';
+import { QueueService } from '../shared/queue/queue.service';
 
 @Injectable()
 export class BookingsService {
@@ -24,6 +25,7 @@ export class BookingsService {
     private readonly bookingsRepository: BookingsRepository,
     private readonly slotsService: SlotsService,
     private readonly distributedLockService: DistributedLockService,
+    private readonly queueService: QueueService,
   ) {}
 
   async create(user: User, createBookingDto: CreateBookingDto) {
@@ -122,10 +124,33 @@ export class BookingsService {
       throw new BadRequestException('Cannot cancel a refunded booking');
     }
 
-    return this.bookingsRepository.cancel(id);
+    const canceledBooking = await this.bookingsRepository.cancel(id);
+    await this.queueService.dispatchBookingCancelled({
+      bookingId: canceledBooking.id,
+      userEmail: canceledBooking.user.email,
+      userName: canceledBooking.user.name,
+      serviceName: canceledBooking.slot.service.name,
+      startTime: canceledBooking.slot.startTime.toISOString(),
+      refunded: false,
+      userId: canceledBooking.user.id,
+    });
+
+    return canceledBooking;
   }
 
-  cancelExpired() {
-    return this.bookingsRepository.cancelExpired();
+  async cancelExpired() {
+    const bookings = await this.bookingsRepository.cancelExpired();
+
+    for (const booking of bookings) {
+      await this.queueService.dispatchBookingCancelled({
+        bookingId: booking.id,
+        userEmail: booking.user.email,
+        userName: booking.user.name,
+        serviceName: booking.slot.service.name,
+        startTime: booking.slot.startTime.toISOString(),
+        refunded: false,
+        userId: booking.user.id,
+      });
+    }
   }
 }

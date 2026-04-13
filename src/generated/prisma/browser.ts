@@ -47,3 +47,13 @@ export type Payment = Prisma.PaymentModel
  * 
  */
 export type StripeEvent = Prisma.StripeEventModel
+/**
+ * Model EmailLog
+ * 
+ */
+export type EmailLog = Prisma.EmailLogModel
+/**
+ * Model EmailSuppression
+ * 
+ */
+export type EmailSuppression = Prisma.EmailSuppressionModel

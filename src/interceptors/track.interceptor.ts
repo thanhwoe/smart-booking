@@ -1,4 +1,4 @@
-import { PostHogService } from '@app/modules/shared/posthog/posthog.service';
+import { TrackService } from '@app/modules/shared/track/track.service';
 import {
   CallHandler,
   ExecutionContext,
@@ -8,8 +8,8 @@ import {
 import { tap } from 'rxjs/operators';
 
 @Injectable()
-export class PostHogInterceptor implements NestInterceptor {
-  constructor(private posthog: PostHogService) {}
+export class TrackInterceptor implements NestInterceptor {
+  constructor(private trackService: TrackService) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
     const req = context.switchToHttp().getRequest();
@@ -18,7 +18,7 @@ export class PostHogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap(() => {
-        this.posthog.capture({
+        this.trackService.capture({
           distinctId: req.user?.id || 'anonymous',
           event: 'api_called',
           properties: {

@@ -45,3 +45,26 @@ export const PaymentStatus = {
 } as const
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
+export const EmailStatus = {
+  QUEUED: 'QUEUED',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  DELIVERY_DELAYED: 'DELIVERY_DELAYED',
+  BOUNCED: 'BOUNCED',
+  COMPLAINED: 'COMPLAINED',
+  FAILED: 'FAILED'
+} as const
+
+export type EmailStatus = (typeof EmailStatus)[keyof typeof EmailStatus]
+
+
+export const SuppressionReason = {
+  HARD_BOUNCE: 'HARD_BOUNCE',
+  SOFT_BOUNCE: 'SOFT_BOUNCE',
+  COMPLAINT: 'COMPLAINT',
+  MANUAL: 'MANUAL'
+} as const
+
+export type SuppressionReason = (typeof SuppressionReason)[keyof typeof SuppressionReason]
