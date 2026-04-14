@@ -138,6 +138,23 @@ export class BookingsService {
     return canceledBooking;
   }
 
+  async refund(id: string) {
+    const booking = await this.findOne(id);
+    if (booking.status === BookingStatus.REFUNDED) {
+      throw new BadRequestException('Booking is already refunded');
+    }
+    if (booking.status === BookingStatus.CANCELLED) {
+      throw new BadRequestException('Booking is already cancelled');
+    }
+
+    await this.slotsService.decreaseBookingCount(booking.slotId);
+
+    return this.bookingsRepository.update(id, {
+      status: BookingStatus.REFUNDED,
+      cancelledAt: new Date(),
+    });
+  }
+
   async cancelExpired() {
     const bookings = await this.bookingsRepository.cancelExpired();
 

@@ -5,7 +5,9 @@ import {
 import {
   Booking,
   BookingStatus,
+  Payment,
   PaymentStatus,
+  Service,
   SlotStatus,
 } from '@app/generated/prisma/client';
 import {
@@ -31,13 +33,29 @@ type BookingCanceled = {
     };
     startTime: Date;
   };
+  payment: {
+    id: string;
+    status: PaymentStatus;
+  } | null;
+};
+
+export type BookingWithPayment = Booking & {
+  payment: Payment | null;
+  slot: {
+    service: Service;
+    provider: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  };
 };
 
 interface IBookingRepository {
-  create(data: CreateBookingData): Promise<Booking>;
+  create(data: CreateBookingData): Promise<BookingWithPayment>;
   update(id: string, data: BookingUpdateInput): Promise<Booking>;
   delete(id: string): Promise<Booking>;
-  findOne(id: string): Promise<Booking | null>;
+  findOne(id: string): Promise<BookingWithPayment | null>;
   findByIdempotencyKey(idempotencyKey: string): Promise<Booking | null>;
   findAll(params?: {
     skip: number;
@@ -109,7 +127,7 @@ export class BookingsRepository implements IBookingRepository {
         data: {
           bookingId: booking.id,
           amount: slot.service.price ?? 0,
-          currency: 'USD',
+          currency: 'usd',
           status: PaymentStatus.PENDING,
         },
       });
@@ -126,7 +144,7 @@ export class BookingsRepository implements IBookingRepository {
     return this.prisma.booking.delete({ where: { id } });
   }
 
-  findOne(id: string): Promise<Booking | null> {
+  findOne(id: string): Promise<BookingWithPayment | null> {
     return this.prisma.booking.findUnique({
       where: { id },
       include: this.include(),
@@ -245,6 +263,12 @@ export class BookingsRepository implements IBookingRepository {
             },
           },
           startTime: true,
+        },
+      },
+      payment: {
+        select: {
+          status: true,
+          id: true,
         },
       },
     };

@@ -84,4 +84,16 @@ export class SlotsService {
 
     return updated;
   }
+
+  async decreaseBookingCount(id: string) {
+    const slot = await this.findOne(id);
+    if (slot.bookedCount === 0) {
+      throw new BadRequestException('Slot has no booking');
+    }
+    return this.slotsRepository.update(id, {
+      bookedCount: {
+        decrement: 1,
+      },
+    });
+  }
 }

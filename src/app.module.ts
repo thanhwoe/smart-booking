@@ -17,6 +17,7 @@ import { SlotsModule } from './modules/slots/slots.module';
 import { ServicesModule } from './modules/services/services.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { EmailLogsModule } from './modules/email-logs/email-logs.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { EmailLogsModule } from './modules/email-logs/email-logs.module';
     ServicesModule,
     BookingsModule,
     EmailLogsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

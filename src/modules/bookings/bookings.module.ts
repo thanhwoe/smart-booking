@@ -9,5 +9,6 @@ import { CleanupExpiredBookingsTask } from './tasks/cleanup-expired-bookings.tas
   imports: [SlotsModule],
   controllers: [BookingsController],
   providers: [BookingsService, BookingsRepository, CleanupExpiredBookingsTask],
+  exports: [BookingsService],
 })
 export class BookingsModule {}

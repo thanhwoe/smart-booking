@@ -12,19 +12,6 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import { Public } from '@app/decorators/public.decorator';
 import { ResendWebhookService } from './webhook.service';
 
-/**
- * ResendWebhookController
- *
- * Receives delivery status events from Resend and updates EmailLog +
- * EmailSuppression accordingly.
- *
- * Security: Resend signs webhooks using Svix. Verify with RESEND_WEBHOOK_SECRET.
- *
- * Setup in Resend Dashboard:
- *   Webhooks → Add endpoint → https://yourdomain.com/email/webhook
- *   Subscribe to: email.sent, email.delivered, email.delivery_delayed,
- *                 email.bounced, email.complained, email.opened, email.clicked
- */
 @ApiExcludeController()
 @Controller('email')
 export class ResendWebhookController {
