@@ -16,12 +16,17 @@ import { PaginationQuery } from '@app/decorators/pagination.decorator';
 import { PaginationDto } from '@app/utils/pagination';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { Roles } from '@app/decorators/roles.decorator';
+import { CacheTTL } from '@app/decorators/cache.decorator';
+import { CACHE_TTL } from '@app/constants/cache.constants';
+import { minutes, Throttle } from '@nestjs/throttler';
 
 @Controller('bookings')
+@CacheTTL(CACHE_TTL.BOOKING)
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @Throttle({ sustained: { limit: 10, ttl: minutes(1) } })
   create(
     @CurrentUser() user: User,
     @Body() createBookingDto: CreateBookingDto,

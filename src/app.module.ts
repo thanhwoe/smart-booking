@@ -19,6 +19,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { EmailLogsModule } from './modules/email-logs/email-logs.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
+import { CustomThrottlerGuard } from './guards/throttler.guard';
 
 @Module({
   imports: [
@@ -62,6 +63,10 @@ import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,
