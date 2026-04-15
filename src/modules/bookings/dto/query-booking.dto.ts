@@ -1,7 +1,13 @@
 import { BookingStatus } from '@app/generated/prisma/enums';
 import { IsEnum, IsOptional } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class QueryBookingDto {
+  @ApiProperty({
+    enum: BookingStatus,
+    description: 'Booking status',
+    example: BookingStatus.PENDING,
+  })
   @IsOptional()
   @IsEnum(BookingStatus)
   status?: BookingStatus;

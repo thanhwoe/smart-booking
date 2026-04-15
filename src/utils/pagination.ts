@@ -27,6 +27,29 @@ export class PaginationDto {
   limit?: number = 10;
 }
 
+export class PaginationResponseDto {
+  @ApiProperty({
+    type: 'object',
+    properties: {
+      page: { type: 'number' },
+      limit: { type: 'number' },
+      total: { type: 'number' },
+      totalPages: { type: 'number' },
+      hasPreviousPage: { type: 'boolean' },
+      hasNextPage: { type: 'boolean' },
+    },
+    additionalProperties: false,
+  })
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+  };
+}
+
 export interface PaginatedResult<T> {
   data: T[];
   meta: {
