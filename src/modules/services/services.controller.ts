@@ -14,9 +14,12 @@ import { Roles } from '@app/decorators/roles.decorator';
 import { UserRole } from '@app/generated/prisma/enums';
 import { PaginationQuery } from '@app/decorators/pagination.decorator';
 import { PaginationDto } from '@app/utils/pagination';
+import { CacheTTL } from '@app/decorators/cache.decorator';
+import { CACHE_TTL } from '@app/constants/cache.constants';
 
 @Controller('services')
 @Roles(UserRole.ADMIN)
+@CacheTTL(CACHE_TTL.SERVICE)
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 

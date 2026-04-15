@@ -5,6 +5,8 @@ import { UsersRepository } from './users.repository';
 import { paginate, PaginationDto } from '@app/utils/pagination';
 import { CLERK_CLIENT } from '../auth/clerk/clerk-client.provider';
 import type { ClerkClient } from '@clerk/backend';
+import { ICacheService } from '@app/interfaces/cache.interface';
+import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
 
 @Injectable()
 export class UsersService {
@@ -12,6 +14,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     @Inject(CLERK_CLIENT)
     private readonly clerkClient: ClerkClient,
+    @Inject(ICacheService) private readonly cacheService: ICacheService,
   ) {}
 
   create(createUserDto: CreateUserDto) {
@@ -30,22 +33,32 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    const user = await this.usersRepository.findById(id);
-    if (!user) {
-      throw new NotFoundException(`User with ID "${id}" not found`);
-    }
-    return user;
+    return this.cacheService.wrap(
+      CACHE_KEY.USER_BY_ID(id),
+      CACHE_TTL.USER,
+      async () => {
+        const user = await this.usersRepository.findById(id);
+        if (!user) {
+          throw new NotFoundException(`User with ID "${id}" not found`);
+        }
+        return user;
+      },
+    );
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
-    return this.usersRepository.update(id, updateUserDto);
+    const updatedUser = await this.usersRepository.update(id, updateUserDto);
+    await this.cacheService.del(CACHE_KEY.USER_BY_ID(id));
+    return updatedUser;
   }
 
   async remove(id: string) {
     const user = await this.findOne(id);
     await this.clerkClient.users.deleteUser(user.clerkId);
-    return this.usersRepository.delete(id);
+    await this.usersRepository.delete(id);
+    await this.cacheService.del(CACHE_KEY.USER_BY_ID(id));
+    return user;
   }
 
   syncClerkUser(data: CreateUserDto) {
@@ -59,10 +72,19 @@ export class UsersService {
       return null;
     }
 
-    return this.usersRepository.deleteByClerkId(clerkId);
+    await this.usersRepository.deleteByClerkId(clerkId);
+    await this.cacheService.del(CACHE_KEY.USER_BY_CLERK_ID(clerkId));
+
+    return user;
   }
 
   async findByClerkId(clerkId: string) {
-    return this.usersRepository.findByClerkId(clerkId);
+    return this.cacheService.wrap(
+      CACHE_KEY.USER_BY_CLERK_ID(clerkId),
+      CACHE_TTL.USER,
+      async () => {
+        return this.usersRepository.findByClerkId(clerkId);
+      },
+    );
   }
 }

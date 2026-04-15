@@ -18,6 +18,7 @@ import { ServicesModule } from './modules/services/services.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { EmailLogsModule } from './modules/email-logs/email-logs.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
 
 @Module({
   imports: [
@@ -69,6 +70,10 @@ import { PaymentsModule } from './modules/payments/payments.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: ErrorLoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpCacheInterceptor,
     },
   ],
 })

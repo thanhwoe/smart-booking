@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,10 +10,15 @@ import { SlotStatus, UserRole } from '@app/generated/prisma/enums';
 import { paginate, PaginationDto } from '@app/utils/pagination';
 import { QuerySlotDto } from './dto/query-slot.dto';
 import { User } from '@app/generated/prisma/client';
+import { ICacheService } from '@app/interfaces/cache.interface';
+import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
 
 @Injectable()
 export class SlotsService {
-  constructor(private readonly slotsRepository: SlotsRepository) {}
+  constructor(
+    private readonly slotsRepository: SlotsRepository,
+    @Inject(ICacheService) private readonly cacheService: ICacheService,
+  ) {}
 
   async create(providerId: string, createSlotDto: CreateSlotDto) {
     const startTime = new Date(createSlotDto.startTime);
@@ -60,11 +66,17 @@ export class SlotsService {
   }
 
   async findOne(id: string) {
-    const slot = await this.slotsRepository.findOne(id);
-    if (!slot) {
-      throw new NotFoundException(`Slot with ID ${id} not found`);
-    }
-    return slot;
+    return this.cacheService.wrap(
+      CACHE_KEY.SLOT_BY_ID(id),
+      CACHE_TTL.SLOT,
+      async () => {
+        const slot = await this.slotsRepository.findOne(id);
+        if (!slot) {
+          throw new NotFoundException(`Slot with ID ${id} not found`);
+        }
+        return slot;
+      },
+    );
   }
 
   async remove(id: string, user: User) {
@@ -82,6 +94,8 @@ export class SlotsService {
       status: SlotStatus.CANCELLED,
     });
 
+    await this.cacheService.del(CACHE_KEY.SLOT_BY_ID(id));
+
     return updated;
   }
 
@@ -90,10 +104,11 @@ export class SlotsService {
     if (slot.bookedCount === 0) {
       throw new BadRequestException('Slot has no booking');
     }
-    return this.slotsRepository.update(id, {
+    await this.slotsRepository.update(id, {
       bookedCount: {
         decrement: 1,
       },
     });
+    await this.cacheService.del(CACHE_KEY.SLOT_BY_ID(id));
   }
 }

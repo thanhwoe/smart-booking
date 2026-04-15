@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ServiceRepository } from './services.repository';
 import { paginate, PaginationDto } from '@app/utils/pagination';
+import { ICacheService } from '@app/interfaces/cache.interface';
+import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly serviceRepository: ServiceRepository) {}
+  constructor(
+    private readonly serviceRepository: ServiceRepository,
+    @Inject(ICacheService) private readonly cacheService: ICacheService,
+  ) {}
 
   create(createServiceDto: CreateServiceDto) {
     return this.serviceRepository.create(createServiceDto);
@@ -24,14 +29,30 @@ export class ServicesService {
   }
 
   findOne(id: string) {
-    return this.serviceRepository.findOne(id);
+    return this.cacheService.wrap(
+      CACHE_KEY.SERVICE_BY_ID(id),
+      CACHE_TTL.SERVICE,
+      async () => {
+        const service = await this.serviceRepository.findOne(id);
+        if (!service) {
+          throw new NotFoundException(`Service with ID ${id} not found`);
+        }
+        return service;
+      },
+    );
   }
 
-  update(id: string, updateServiceDto: UpdateServiceDto) {
-    return this.serviceRepository.update(id, updateServiceDto);
+  async update(id: string, updateServiceDto: UpdateServiceDto) {
+    await this.findOne(id);
+    const updated = await this.serviceRepository.update(id, updateServiceDto);
+    await this.cacheService.del(CACHE_KEY.SERVICE_BY_ID(id));
+    return updated;
   }
 
-  remove(id: string) {
-    return this.serviceRepository.delete(id);
+  async remove(id: string) {
+    await this.findOne(id);
+    const deleted = await this.serviceRepository.delete(id);
+    await this.cacheService.del(CACHE_KEY.SERVICE_BY_ID(id));
+    return deleted;
   }
 }

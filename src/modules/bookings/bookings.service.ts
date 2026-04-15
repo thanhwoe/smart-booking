@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import { DistributedLockService } from '../shared/lock/distributed-lock.service'
 import { paginate, PaginationDto } from '@app/utils/pagination';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { QueueService } from '../shared/queue/queue.service';
+import { ICacheService } from '@app/interfaces/cache.interface';
+import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
 
 @Injectable()
 export class BookingsService {
@@ -26,6 +29,7 @@ export class BookingsService {
     private readonly slotsService: SlotsService,
     private readonly distributedLockService: DistributedLockService,
     private readonly queueService: QueueService,
+    @Inject(ICacheService) private readonly cacheService: ICacheService,
   ) {}
 
   async create(user: User, createBookingDto: CreateBookingDto) {
@@ -72,11 +76,17 @@ export class BookingsService {
   }
 
   async findOne(id: string) {
-    const booking = await this.bookingsRepository.findOne(id);
-    if (!booking) {
-      throw new NotFoundException(`Booking with ${id} not found`);
-    }
-    return booking;
+    return this.cacheService.wrap(
+      CACHE_KEY.BOOKING_BY_ID(id),
+      CACHE_TTL.BOOKING,
+      async () => {
+        const booking = await this.bookingsRepository.findOne(id);
+        if (!booking) {
+          throw new NotFoundException(`Booking with ${id} not found`);
+        }
+        return booking;
+      },
+    );
   }
 
   async findByUser(
@@ -103,10 +113,14 @@ export class BookingsService {
       throw new BadRequestException('You can only confirm pending bookings');
     }
 
-    return this.bookingsRepository.update(id, {
+    const updated = await this.bookingsRepository.update(id, {
       status: BookingStatus.CONFIRMED,
       confirmedAt: new Date(),
     });
+
+    await this.cacheService.del(CACHE_KEY.BOOKING_BY_ID(id));
+
+    return updated;
   }
 
   async cancel(id: string, user: User) {
@@ -125,6 +139,9 @@ export class BookingsService {
     }
 
     const canceledBooking = await this.bookingsRepository.cancel(id);
+
+    await this.cacheService.del(CACHE_KEY.BOOKING_BY_ID(id));
+
     await this.queueService.dispatchBookingCancelled({
       bookingId: canceledBooking.id,
       userEmail: canceledBooking.user.email,
@@ -149,10 +166,14 @@ export class BookingsService {
 
     await this.slotsService.decreaseBookingCount(booking.slotId);
 
-    return this.bookingsRepository.update(id, {
+    const updated = await this.bookingsRepository.update(id, {
       status: BookingStatus.REFUNDED,
       cancelledAt: new Date(),
     });
+
+    await this.cacheService.del(CACHE_KEY.BOOKING_BY_ID(id));
+
+    return updated;
   }
 
   async cancelExpired() {
