@@ -12,11 +12,9 @@ import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CurrentUser } from '@app/decorators/current-user.decorator';
 import { UserRole, type User } from '@app/generated/prisma/client';
-import { PaginationQuery } from '@app/decorators/pagination.decorator';
-import { PaginationDto } from '@app/utils/pagination';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { Roles } from '@app/decorators/roles.decorator';
-import { CacheTTL } from '@app/decorators/cache.decorator';
+import { CacheTTL, IgnoreCache } from '@app/decorators/cache.decorator';
 import { CACHE_TTL } from '@app/constants/cache.constants';
 import { minutes, Throttle } from '@nestjs/throttler';
 import {
@@ -48,20 +46,18 @@ export class BookingsController {
   }
 
   @Get()
+  @IgnoreCache()
   @ApiOkResponse({
     summary: 'Get bookings by user',
     params: QueryBookingDto,
     response: ResponseBookingsDto,
   })
-  findByUser(
-    @CurrentUser() user: User,
-    @PaginationQuery() pagination: PaginationDto,
-    @Query() query: QueryBookingDto,
-  ) {
-    return this.bookingsService.findByUser(user, pagination, query);
+  findByUser(@CurrentUser() user: User, @Query() query: QueryBookingDto) {
+    return this.bookingsService.findByUser(user, query);
   }
 
   @Get('all')
+  @IgnoreCache()
   @ApiOkResponse({
     summary: 'Get all bookings',
     params: QueryBookingDto,
@@ -69,14 +65,25 @@ export class BookingsController {
     roles: [UserRole.ADMIN],
   })
   @Roles(UserRole.ADMIN)
-  findAll(
-    @PaginationQuery() pagination: PaginationDto,
-    @Query() query: QueryBookingDto,
-  ) {
-    return this.bookingsService.findAll(pagination, query);
+  findAll(@Query() query: QueryBookingDto) {
+    return this.bookingsService.findAll(query);
+  }
+
+  @Get('provider')
+  @IgnoreCache()
+  @ApiOkResponse({
+    summary: 'Get bookings by provider',
+    params: QueryBookingDto,
+    response: ResponseBookingsDto,
+    roles: [UserRole.PROVIDER, UserRole.ADMIN],
+  })
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  findByProvider(@CurrentUser() user: User, @Query() query: QueryBookingDto) {
+    return this.bookingsService.findByProvider(user, query);
   }
 
   @Get(':id')
+  @IgnoreCache()
   @ApiOkResponse({
     summary: 'Get booking by id',
     params: QueryBookingDto,

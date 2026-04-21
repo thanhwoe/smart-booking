@@ -8,6 +8,7 @@ import { CurrentUser } from '@app/decorators/current-user.decorator';
 import { UserRole, type User } from '@app/generated/prisma/client';
 import { ApiOkResponse } from '@app/decorators/swagger.decorator';
 import { ResponseUserDto, ResponseUsersDto } from './dto/response-user.dto';
+import { IgnoreCache } from '@app/decorators/cache.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -32,6 +33,7 @@ export class UsersController {
   }
 
   @Get()
+  @IgnoreCache()
   @ApiOkResponse({
     summary: 'Get all users',
     response: ResponseUsersDto,

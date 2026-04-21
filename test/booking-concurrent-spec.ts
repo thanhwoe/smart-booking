@@ -8,44 +8,30 @@ const token =
 const slotId = '33b8d42e-1434-4723-915d-abe27c7a198a';
 
 async function test() {
-  const requests = [
+  const makeRequest = (idempotencyKey: string) =>
     axios.post(
       url,
+      { slotId, idempotencyKey },
       {
-        slotId,
-        idempotencyKey: 'key-3',
+        headers: { Authorization: `Bearer ${token}` },
+        validateStatus: () => true,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    ),
-    axios.post(
-      url,
-      {
-        slotId,
-        idempotencyKey: 'key-4',
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    ),
-  ];
+    );
 
-  const results = await Promise.allSettled(requests);
+  const [r1, r2] = await Promise.all([
+    makeRequest(`key-${Date.now()}-1`),
+    makeRequest(`key-${Date.now()}-2`),
+  ]);
 
-  results.forEach((res, index) => {
-    if (res.status === 'fulfilled') {
-      console.log(`Request ${index + 1} SUCCESS:`);
-      console.log(JSON.stringify(res.value.data, null, 2));
-    } else {
-      console.log(`Request ${index + 1} ERROR:`);
-      console.log(JSON.stringify(res.reason, null, 2));
-    }
-  });
+  for (const [i, res] of [
+    [1, r1],
+    [2, r2],
+  ] as const) {
+    console.log(`── Request ${i} ──────────────────`);
+    console.log(`HTTP status : ${res.status}`);
+    console.log(`message     : ${res.data?.message ?? '(none)'}`);
+    console.log(`data        : ${res.data?.data?.id ?? res.data?.id}`);
+  }
 }
 
 void test();

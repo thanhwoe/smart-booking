@@ -14,7 +14,7 @@ import { Roles } from '@app/decorators/roles.decorator';
 import { UserRole } from '@app/generated/prisma/enums';
 import { PaginationQuery } from '@app/decorators/pagination.decorator';
 import { PaginationDto } from '@app/utils/pagination';
-import { CacheTTL } from '@app/decorators/cache.decorator';
+import { CacheTTL, IgnoreCache } from '@app/decorators/cache.decorator';
 import { CACHE_TTL } from '@app/constants/cache.constants';
 import {
   ApiCreatedResponse,
@@ -26,12 +26,12 @@ import {
 } from './dto/response-service.dto';
 
 @Controller('services')
-@Roles(UserRole.ADMIN)
 @CacheTTL(CACHE_TTL.SERVICE)
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiCreatedResponse({
     summary: 'Create a new service',
     body: CreateServiceDto,
@@ -42,6 +42,7 @@ export class ServicesController {
   }
 
   @Get()
+  @IgnoreCache()
   @ApiOkResponse({
     summary: 'Get services',
     params: PaginationDto,
@@ -61,6 +62,7 @@ export class ServicesController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOkResponse({
     summary: 'Update service',
     body: UpdateServiceDto,
@@ -71,6 +73,7 @@ export class ServicesController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOkResponse({
     summary: 'Delete service',
     response: ResponseServiceDto,

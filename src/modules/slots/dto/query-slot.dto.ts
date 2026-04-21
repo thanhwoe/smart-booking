@@ -1,8 +1,9 @@
 import { IsDateString, IsOptional, IsEnum, IsString } from 'class-validator';
 import { SlotStatus } from '@app/generated/prisma/enums';
 import { ApiProperty } from '@nestjs/swagger';
+import { PaginationDto } from '@app/utils/pagination';
 
-export class QuerySlotDto {
+export class QuerySlotDto extends PaginationDto {
   @ApiProperty()
   @IsOptional()
   @IsString()

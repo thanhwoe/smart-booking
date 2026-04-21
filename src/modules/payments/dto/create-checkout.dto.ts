@@ -3,12 +3,16 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCheckoutDto {
   @ApiProperty()
-  @IsUrl()
+  @IsUrl({
+    host_whitelist: ['localhost', 'example.com'],
+  })
   @IsNotEmpty()
   successUrl: string;
 
   @ApiProperty()
-  @IsUrl()
+  @IsUrl({
+    host_whitelist: ['localhost', 'example.com'],
+  })
   @IsNotEmpty()
   cancelUrl: string;
 }

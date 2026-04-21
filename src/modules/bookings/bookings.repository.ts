@@ -62,6 +62,7 @@ interface IBookingRepository {
     take: number;
     status?: BookingStatus;
     userId?: string;
+    providerId?: string;
   }): Promise<[Booking[], number]>;
   cancel(id: string): Promise<BookingCanceled>;
   cancelExpired(): Promise<BookingCanceled[]>;
@@ -160,16 +161,29 @@ export class BookingsRepository implements IBookingRepository {
     take?: number;
     userId?: string;
     status?: BookingStatus;
+    providerId?: string;
   }): Promise<[Booking[], number]> {
     const where: BookingWhereInput = {
       userId: params?.userId,
       status: params?.status,
+      slot: { providerId: params?.providerId },
     };
     return this.prisma.$transaction([
       this.prisma.booking.findMany({
         where,
         skip: params?.skip,
         take: params?.take,
+        include: {
+          slot: {
+            include: {
+              service: true,
+            },
+          },
+          payment: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
       }),
       this.prisma.booking.count({
         where,

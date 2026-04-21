@@ -2,7 +2,7 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
-  "testRegex": "e2e/.*\\.e2e-spec\\.ts$",
+  "testRegex": "unit/.*\\.spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
@@ -10,6 +10,5 @@
     "^@app/(.*)$": "<rootDir>/../src/$1"
   },
   "resolver": "<rootDir>/setup/jest-resolver.js",
-  "testTimeout": 30000,
-  "setupFiles": ["dotenv/config"]
+  "testTimeout": 10000
 }

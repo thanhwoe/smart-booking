@@ -66,6 +66,10 @@ export class SlotsRepository implements ISlotsRepository {
         where,
         skip: params?.skip,
         take: params?.take,
+        include: {
+          service: true,
+          provider: true,
+        },
       }),
       this.prisma.slot.count({ where }),
     ]);
@@ -96,18 +100,12 @@ export class SlotsRepository implements ISlotsRepository {
         status: {
           not: SlotStatus.CANCELLED,
         },
-        OR: [
-          {
-            startTime: {
-              lt: params.endTime,
-            },
-          },
-          {
-            endTime: {
-              gt: params.startTime,
-            },
-          },
-        ],
+        startTime: {
+          lt: params.endTime,
+        },
+        endTime: {
+          gt: params.startTime,
+        },
       },
     });
   }

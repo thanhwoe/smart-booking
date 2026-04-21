@@ -7,11 +7,12 @@ import {
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { SlotsRepository } from './slots.repository';
 import { SlotStatus, UserRole } from '@app/generated/prisma/enums';
-import { paginate, PaginationDto } from '@app/utils/pagination';
+import { paginate } from '@app/utils/pagination';
 import { QuerySlotDto } from './dto/query-slot.dto';
 import { User } from '@app/generated/prisma/client';
 import { ICacheService } from '@app/interfaces/cache.interface';
 import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
+import { UpdateSlotDto } from './dto/update-slot.dto';
 
 @Injectable()
 export class SlotsService {
@@ -53,8 +54,8 @@ export class SlotsService {
     return slot;
   }
 
-  async findAll(pagination: PaginationDto, query: QuerySlotDto) {
-    const { page = 1, limit = 10 } = pagination;
+  async findAll(query: QuerySlotDto) {
+    const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
     const [data, total] = await this.slotsRepository.findAll({
       skip,
@@ -77,6 +78,25 @@ export class SlotsService {
         return slot;
       },
     );
+  }
+
+  async update(id: string, updateSlotDto: UpdateSlotDto, user: User) {
+    const slot = await this.findOne(id);
+
+    // Only the provider who owns the slot or an admin can update it
+    if (user.role !== UserRole.ADMIN && slot.providerId !== user.id) {
+      throw new BadRequestException('You can only update your own slots');
+    }
+
+    if (slot.bookedCount > 0) {
+      throw new BadRequestException('Slot has booking');
+    }
+
+    const updated = await this.slotsRepository.update(id, {
+      status: updateSlotDto.status,
+    });
+    await this.cacheService.del(CACHE_KEY.SLOT_BY_ID(id));
+    return updated;
   }
 
   async remove(id: string, user: User) {
@@ -108,6 +128,7 @@ export class SlotsService {
       bookedCount: {
         decrement: 1,
       },
+      status: SlotStatus.AVAILABLE,
     });
     await this.cacheService.del(CACHE_KEY.SLOT_BY_ID(id));
   }

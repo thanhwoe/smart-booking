@@ -39,9 +39,29 @@ services:
       timeout: 5s
       retries: 3
 
+  postgres_test:
+    image: postgres:16-alpine
+    container_name: smart-booking-postgres-test
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=smart_booking_test
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - smart-booking-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   smart-booking-net:
     driver: bridge
 
 volumes:
   redis_data:
+  postgres_test_data:

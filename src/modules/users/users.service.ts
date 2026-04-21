@@ -58,6 +58,7 @@ export class UsersService {
     await this.clerkClient.users.deleteUser(user.clerkId);
     await this.usersRepository.delete(id);
     await this.cacheService.del(CACHE_KEY.USER_BY_ID(id));
+    await this.cacheService.del(CACHE_KEY.USER_BY_CLERK_ID(user.clerkId));
     return user;
   }
 

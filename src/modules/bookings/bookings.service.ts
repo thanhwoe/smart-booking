@@ -10,13 +10,14 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingsRepository } from './bookings.repository';
 import {
   BookingStatus,
+  PaymentStatus,
   SlotStatus,
   User,
   UserRole,
 } from '@app/generated/prisma/client';
 import { SlotsService } from '../slots/slots.service';
 import { DistributedLockService } from '../shared/lock/distributed-lock.service';
-import { paginate, PaginationDto } from '@app/utils/pagination';
+import { paginate } from '@app/utils/pagination';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { QueueService } from '../shared/queue/queue.service';
 import { ICacheService } from '@app/interfaces/cache.interface';
@@ -53,18 +54,20 @@ export class BookingsService {
 
     return this.distributedLockService.withLock(
       createBookingDto.slotId,
-      async () =>
-        this.bookingsRepository.create({
+      async () => {
+        // await new Promise((r) => setTimeout(r, 2000));
+        return this.bookingsRepository.create({
           slotId: createBookingDto.slotId,
           userId: user.id,
           idempotencyKey: createBookingDto.idempotencyKey,
-        }),
+        });
+      },
       'booking',
     );
   }
 
-  async findAll(pagination: PaginationDto, query: QueryBookingDto) {
-    const { page = 1, limit = 10 } = pagination;
+  async findAll(query: QueryBookingDto) {
+    const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
     const [data, total] = await this.bookingsRepository.findAll({
       skip,
@@ -89,12 +92,8 @@ export class BookingsService {
     );
   }
 
-  async findByUser(
-    user: User,
-    pagination: PaginationDto,
-    query: QueryBookingDto,
-  ) {
-    const { page = 1, limit = 10 } = pagination;
+  async findByUser(user: User, query: QueryBookingDto) {
+    const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
     const [data, total] = await this.bookingsRepository.findAll({
       skip,
@@ -106,11 +105,29 @@ export class BookingsService {
     return paginate(data, total, page, limit);
   }
 
+  async findByProvider(user: User, query: QueryBookingDto) {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
+    const [data, total] = await this.bookingsRepository.findAll({
+      skip,
+      take: limit,
+      status: query.status,
+      providerId: user.id,
+    });
+
+    return paginate(data, total, page, limit);
+  }
+
   async confirm(id: string) {
     const booking = await this.findOne(id);
 
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('You can only confirm pending bookings');
+    }
+    if (booking.payment?.status !== PaymentStatus.PAID) {
+      throw new BadRequestException(
+        'You can only confirm bookings with successful payment',
+      );
     }
 
     const updated = await this.bookingsRepository.update(id, {
@@ -159,9 +176,6 @@ export class BookingsService {
     const booking = await this.findOne(id);
     if (booking.status === BookingStatus.REFUNDED) {
       throw new BadRequestException('Booking is already refunded');
-    }
-    if (booking.status === BookingStatus.CANCELLED) {
-      throw new BadRequestException('Booking is already cancelled');
     }
 
     await this.slotsService.decreaseBookingCount(booking.slotId);
