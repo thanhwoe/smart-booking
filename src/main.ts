@@ -1,3 +1,5 @@
+import './instrument';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {
@@ -5,11 +7,11 @@ import {
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from './filters/prisma-exceptions.filter';
+import { formatValidationErrors } from './utils/format';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -22,9 +24,7 @@ async function bootstrap() {
     prefix: 'v',
   });
 
-  const configService: ConfigService = app.get<ConfigService>(ConfigService);
-
-  const apiPrefix: string = configService.get<string>('API_PREFIX') ?? 'api';
+  const apiPrefix: string = 'api';
   app.setGlobalPrefix(apiPrefix);
 
   app.enableCors();
@@ -52,7 +52,9 @@ async function bootstrap() {
       exceptionFactory: (errors) => {
         const messages = errors.map((error) => ({
           field: error.property,
-          errors: Object.values(error.constraints || {}),
+          errors: formatValidationErrors(
+            Object.values(error.constraints || {}),
+          ),
         }));
         return new BadRequestException({
           message: 'Validation failed',

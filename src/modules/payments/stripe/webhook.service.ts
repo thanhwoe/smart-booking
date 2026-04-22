@@ -16,6 +16,7 @@ import { PaymentsRepository } from '../payments.repository';
 import { StripeEventsRepository } from './stripe-events.repository';
 import { PaymentStatus } from '@app/generated/prisma/enums';
 import { Charge } from 'node_modules/stripe/cjs/resources/Charges';
+import * as Sentry from '@sentry/nestjs';
 
 @Injectable()
 export class StripeWebhookService {
@@ -73,6 +74,7 @@ export class StripeWebhookService {
           });
       }
     } catch (error) {
+      Sentry.captureException(error);
       this.trackService.error(error as Error, {
         distinctId: 'system',
         properties: {

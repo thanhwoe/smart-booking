@@ -11,16 +11,13 @@ export class StripeService {
     private readonly stripeClient: Stripe,
   ) {}
 
-  createSession(
-    booking: BookingWithPayment,
-    user: User,
-    successUrl: string,
-    cancelUrl: string,
-  ) {
+  createSession(booking: BookingWithPayment, user: User, successUrl: string) {
+    // Stripe requires amount to be in cents
     const amount = Math.round(Number(booking.slot.service.price) * 100);
 
     return this.stripeClient.checkout.sessions.create({
       mode: 'payment',
+      ui_mode: 'embedded_page',
       payment_method_types: ['card'],
       customer_email: user.email,
       line_items: [
@@ -29,7 +26,6 @@ export class StripeService {
             currency: booking.payment?.currency ?? 'usd',
             product_data: {
               name: booking.slot.service.name,
-              description: booking.slot.service.description ?? undefined,
               metadata: {
                 bookingId: booking.id,
               },
@@ -39,8 +35,7 @@ export class StripeService {
           quantity: 1,
         },
       ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      return_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         bookingId: booking.id,
         paymentId: booking.payment?.id ?? '',

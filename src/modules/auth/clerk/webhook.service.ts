@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Webhook } from 'svix';
 import { Request } from 'express';
 import { TrackService } from '@app/modules/shared/track/track.service';
+import * as Sentry from '@sentry/nestjs';
 
 interface ClerkUserData {
   id: string;
@@ -52,6 +53,7 @@ export class WebhookService {
         'svix-signature': svixSignature,
       }) as typeof event;
     } catch (err) {
+      Sentry.captureException(err);
       this.trackService.capture({
         event: 'webhook_signature_verification_failed',
         distinctId: 'system',
@@ -61,25 +63,37 @@ export class WebhookService {
       });
       throw new BadRequestException('Invalid webhook signature');
     }
-
-    switch (event.type) {
-      case 'user.created':
-        await this.handleUserCreated(event.data);
-        break;
-      case 'user.updated':
-        await this.handleUserUpdated(event.data);
-        break;
-      case 'user.deleted':
-        await this.handleUserDeleted(event.data);
-        break;
-      default:
-        this.trackService.capture({
-          event: 'webhook_unhandled_event',
-          distinctId: 'system',
-          properties: {
-            eventType: event.type,
-          },
-        });
+    try {
+      switch (event.type) {
+        case 'user.created':
+          await this.handleUserCreated(event.data);
+          break;
+        case 'user.updated':
+          await this.handleUserUpdated(event.data);
+          break;
+        case 'user.deleted':
+          await this.handleUserDeleted(event.data);
+          break;
+        default:
+          this.trackService.capture({
+            event: 'webhook_unhandled_event',
+            distinctId: 'system',
+            properties: {
+              eventType: event.type,
+            },
+          });
+      }
+    } catch (error) {
+      Sentry.captureException(error);
+      this.trackService.capture({
+        distinctId: 'system',
+        event: 'clerk_webhook_error',
+        properties: {
+          error: error as Error,
+          eventType: event.type,
+        },
+      });
+      throw error;
     }
 
     return { received: true };

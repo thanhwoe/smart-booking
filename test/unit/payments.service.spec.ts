@@ -158,7 +158,7 @@ describe('PaymentsService', () => {
       bookingsService.findOne.mockResolvedValue(mockBooking);
       stripeService.createSession.mockResolvedValue({
         id: 'cs_123',
-        url: 'https://checkout.stripe.com/test',
+        client_secret: 'https://checkout.stripe.com/test',
       } as any);
       paymentsRepository.update.mockResolvedValue({} as any);
 
@@ -171,7 +171,7 @@ describe('PaymentsService', () => {
         },
       );
 
-      expect(result.url).toBe('https://checkout.stripe.com/test');
+      expect(result.clientSecret).toBe('https://checkout.stripe.com/test');
       expect(result.id).toBe('cs_123');
     });
 

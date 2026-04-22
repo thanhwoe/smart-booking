@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { TrackService } from '../../track/track.service';
 import { Webhook } from 'svix';
 import { Request } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 interface ResendWebhookEvent {
   type:
@@ -62,6 +63,7 @@ export class ResendWebhookService {
         'svix-signature': svixSignature,
       }) as ResendWebhookEvent;
     } catch (err) {
+      Sentry.captureException(err);
       this.trackService.capture({
         distinctId: 'system',
         event: 'resend_webhook_signature_verification_failed',
@@ -129,6 +131,7 @@ export class ResendWebhookService {
           });
       }
     } catch (err) {
+      Sentry.captureException(err);
       this.trackService.capture({
         distinctId: 'system',
         event: 'resend_webhook_error',

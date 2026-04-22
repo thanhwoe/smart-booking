@@ -65,7 +65,7 @@ describe('Payments E2E', () => {
         })
         .expect(201);
 
-      expect(res.body).toHaveProperty('url');
+      expect(res.body).toHaveProperty('clientSecret');
       expect(res.body).toHaveProperty('id');
     });
 

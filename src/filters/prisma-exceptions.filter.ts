@@ -1,14 +1,16 @@
 import {
-  ArgumentsHost,
+  type ArgumentsHost,
   Catch,
   ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
 
 @Catch(PrismaClientKnownRequestError)
 export class PrismaExceptionFilter implements ExceptionFilter {
+  @SentryExceptionCaptured()
   catch(exception: PrismaClientKnownRequestError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

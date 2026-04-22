@@ -54,19 +54,18 @@ export class PaymentsService {
       booking,
       user,
       createCheckoutDto.successUrl,
-      createCheckoutDto.cancelUrl,
     );
 
-    if (!session.url) {
-      throw new BadRequestException('Stripe did not return a checkout URL');
+    if (!session.client_secret) {
+      throw new BadRequestException('Stripe did not return a client secret');
     }
 
     await this.paymentsRepository.update(booking.payment.id, {
       stripeSessionId: session.id,
     });
     return {
-      url: session.url,
       id: session.id,
+      clientSecret: session.client_secret,
     };
   }
 

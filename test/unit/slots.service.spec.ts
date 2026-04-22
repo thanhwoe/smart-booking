@@ -4,6 +4,7 @@ import { SlotsRepository } from '@app/modules/slots/slots.repository';
 import { ICacheService } from '@app/interfaces/cache.interface';
 import { Slot, SlotStatus, UserRole } from '@app/generated/prisma/client';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ServicesService } from '@app/modules/services/services.service';
 
 describe('SlotsService', () => {
   let service: SlotsService;
@@ -36,6 +37,12 @@ describe('SlotsService', () => {
             update: jest.fn(),
             delete: jest.fn(),
             findOverlapping: jest.fn(),
+          },
+        },
+        {
+          provide: ServicesService,
+          useValue: {
+            findOne: jest.fn(),
           },
         },
         {

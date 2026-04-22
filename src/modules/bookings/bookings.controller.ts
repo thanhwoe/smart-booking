@@ -13,7 +13,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { CurrentUser } from '@app/decorators/current-user.decorator';
 import { UserRole, type User } from '@app/generated/prisma/client';
 import { QueryBookingDto } from './dto/query-booking.dto';
-import { Roles } from '@app/decorators/roles.decorator';
+import { AdminOnly, Roles } from '@app/decorators/roles.decorator';
 import { CacheTTL, IgnoreCache } from '@app/decorators/cache.decorator';
 import { CACHE_TTL } from '@app/constants/cache.constants';
 import { minutes, Throttle } from '@nestjs/throttler';
@@ -64,7 +64,7 @@ export class BookingsController {
     response: ResponseBookingsDto,
     roles: [UserRole.ADMIN],
   })
-  @Roles(UserRole.ADMIN)
+  @AdminOnly()
   findAll(@Query() query: QueryBookingDto) {
     return this.bookingsService.findAll(query);
   }

@@ -13,17 +13,21 @@ import { User } from '@app/generated/prisma/client';
 import { ICacheService } from '@app/interfaces/cache.interface';
 import { CACHE_KEY, CACHE_TTL } from '@app/constants/cache.constants';
 import { UpdateSlotDto } from './dto/update-slot.dto';
+import { ServicesService } from '../services/services.service';
 
 @Injectable()
 export class SlotsService {
   constructor(
     private readonly slotsRepository: SlotsRepository,
     @Inject(ICacheService) private readonly cacheService: ICacheService,
+    private readonly servicesService: ServicesService,
   ) {}
 
   async create(providerId: string, createSlotDto: CreateSlotDto) {
     const startTime = new Date(createSlotDto.startTime);
     const endTime = new Date(createSlotDto.endTime);
+
+    await this.servicesService.findOne(createSlotDto.serviceId);
 
     const overlappingSlot = await this.slotsRepository.findOverlapping({
       providerId,

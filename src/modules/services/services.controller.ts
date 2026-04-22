@@ -10,8 +10,7 @@ import {
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { Roles } from '@app/decorators/roles.decorator';
-import { UserRole } from '@app/generated/prisma/enums';
+import { AdminOnly } from '@app/decorators/roles.decorator';
 import { PaginationQuery } from '@app/decorators/pagination.decorator';
 import { PaginationDto } from '@app/utils/pagination';
 import { CacheTTL, IgnoreCache } from '@app/decorators/cache.decorator';
@@ -31,7 +30,7 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN)
+  @AdminOnly()
   @ApiCreatedResponse({
     summary: 'Create a new service',
     body: CreateServiceDto,
@@ -62,7 +61,7 @@ export class ServicesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @AdminOnly()
   @ApiOkResponse({
     summary: 'Update service',
     body: UpdateServiceDto,
@@ -73,7 +72,7 @@ export class ServicesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @AdminOnly()
   @ApiOkResponse({
     summary: 'Delete service',
     response: ResponseServiceDto,

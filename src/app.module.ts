@@ -7,7 +7,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './database/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { TrackInterceptor } from './interceptors/track.interceptor';
@@ -20,6 +20,7 @@ import { EmailLogsModule } from './modules/email-logs/email-logs.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
         },
       ],
     }),
+    SentryModule.forRoot(),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -56,6 +58,10 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

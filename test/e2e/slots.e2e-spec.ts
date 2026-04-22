@@ -40,9 +40,7 @@ describe('Slots E2E', () => {
       setTestUser(provider);
 
       const startTime = new Date(Date.now() + 86400000).toISOString(); // tomorrow
-      const endTime = new Date(
-        Date.now() + 86400000 + 3600000,
-      ).toISOString();
+      const endTime = new Date(Date.now() + 86400000 + 3600000).toISOString();
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/slots')
