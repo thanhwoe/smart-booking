@@ -24,6 +24,13 @@ export class PaymentsService {
     private readonly queueService: QueueService,
   ) {}
 
+  /**
+   * Create a Stripe Checkout session for a pending booking
+   * @param bookingId ID of the booking to pay for
+   * @param user User initiating the payment
+   * @param createCheckoutDto Checkout session details
+   * @returns Client secret and session ID
+   */
   async createCheckoutSession(
     bookingId: string,
     user: User,
@@ -69,6 +76,12 @@ export class PaymentsService {
     };
   }
 
+  /**
+   * Find payment details for a specific booking
+   * @param bookingId ID of the booking
+   * @param user User requesting the payment details
+   * @returns Payment record
+   */
   async findOne(bookingId: string, user: User) {
     const payment = await this.paymentsRepository.findByBookingId(bookingId);
     if (!payment) {
@@ -81,6 +94,11 @@ export class PaymentsService {
     return payment;
   }
 
+  /**
+   * Refund a paid booking
+   * @param bookingId ID of the booking to refund
+   * @returns Updated payment record with refund status
+   */
   async refund(bookingId: string) {
     const payment = await this.paymentsRepository.findByBookingId(bookingId);
 

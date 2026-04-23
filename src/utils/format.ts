@@ -1,7 +1,18 @@
+/**
+ * Format date string to local string
+ * @param iso ISO string of the date
+ * @returns formatted local date string
+ */
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
 }
 
+/**
+ * Format numerical amount to internationalized currency string
+ * @param amount amount in smallest unit (e.g., cents)
+ * @param currency currency code
+ * @returns formatted amount string
+ */
 export function formatAmount(amount: number, currency: string): string {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',

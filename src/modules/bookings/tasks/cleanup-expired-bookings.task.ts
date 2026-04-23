@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BookingsService } from '../bookings.service';
+import * as Sentry from '@sentry/nestjs';
 
 @Injectable()
 export class CleanupExpiredBookingsTask {
@@ -15,6 +16,8 @@ export class CleanupExpiredBookingsTask {
     this.isRunning = true;
     try {
       await this.bookingsService.cancelExpired();
+    } catch (error) {
+      Sentry.captureException(error);
     } finally {
       this.isRunning = false;
     }

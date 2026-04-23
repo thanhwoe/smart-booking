@@ -23,6 +23,12 @@ export class SlotsService {
     private readonly servicesService: ServicesService,
   ) {}
 
+  /**
+   * Create a new slot for a provider
+   * @param providerId ID of the provider creating the slot
+   * @param createSlotDto Slot creation data
+   * @returns The created slot
+   */
   async create(providerId: string, createSlotDto: CreateSlotDto) {
     const startTime = new Date(createSlotDto.startTime);
     const endTime = new Date(createSlotDto.endTime);
@@ -58,6 +64,11 @@ export class SlotsService {
     return slot;
   }
 
+  /**
+   * Retrieve all slots with pagination
+   * @param query Pagination and filtering query parameters
+   * @returns Paginated list of slots
+   */
   async findAll(query: QuerySlotDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -70,6 +81,11 @@ export class SlotsService {
     return paginate(data, total, page, limit);
   }
 
+  /**
+   * Retrieve a specific slot by its ID, with caching
+   * @param id ID of the slot
+   * @returns The requested slot
+   */
   async findOne(id: string) {
     return this.cacheService.wrap(
       CACHE_KEY.SLOT_BY_ID(id),
@@ -84,6 +100,13 @@ export class SlotsService {
     );
   }
 
+  /**
+   * Update a slot
+   * @param id ID of the slot
+   * @param updateSlotDto Updated slot data
+   * @param user The user performing the action
+   * @returns The updated slot
+   */
   async update(id: string, updateSlotDto: UpdateSlotDto, user: User) {
     const slot = await this.findOne(id);
 
@@ -103,6 +126,12 @@ export class SlotsService {
     return updated;
   }
 
+  /**
+   * Cancel a slot
+   * @param id ID of the slot to cancel
+   * @param user The user performing the action
+   * @returns The canceled slot
+   */
   async remove(id: string, user: User) {
     const slot = await this.findOne(id);
 
@@ -123,6 +152,10 @@ export class SlotsService {
     return updated;
   }
 
+  /**
+   * Decrease the booking count of a slot
+   * @param id ID of the slot
+   */
   async decreaseBookingCount(id: string) {
     const slot = await this.findOne(id);
     if (slot.bookedCount === 0) {

@@ -1,3 +1,6 @@
+/**
+ * Setup Sentry instrumentation for profiling and tracing
+ */
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 

@@ -33,6 +33,12 @@ export class BookingsService {
     @Inject(ICacheService) private readonly cacheService: ICacheService,
   ) {}
 
+  /**
+   * Create a new booking
+   * @param user User creating the booking
+   * @param createBookingDto Booking creation data
+   * @returns The created booking
+   */
   async create(user: User, createBookingDto: CreateBookingDto) {
     const existing = await this.bookingsRepository.findByIdempotencyKey(
       createBookingDto.idempotencyKey,
@@ -66,6 +72,11 @@ export class BookingsService {
     );
   }
 
+  /**
+   * Retrieve all bookings with pagination and optional filtering
+   * @param query Query and pagination parameters
+   * @returns Paginated list of bookings
+   */
   async findAll(query: QueryBookingDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -78,6 +89,11 @@ export class BookingsService {
     return paginate(data, total, page, limit);
   }
 
+  /**
+   * Retrieve a specific booking by its ID, utilizing cache
+   * @param id Booking ID
+   * @returns The booking
+   */
   async findOne(id: string) {
     return this.cacheService.wrap(
       CACHE_KEY.BOOKING_BY_ID(id),
@@ -92,6 +108,12 @@ export class BookingsService {
     );
   }
 
+  /**
+   * Retrieve all bookings made by a specific user
+   * @param user The user who made the bookings
+   * @param query Query and pagination parameters
+   * @returns Paginated list of bookings
+   */
   async findByUser(user: User, query: QueryBookingDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -105,6 +127,12 @@ export class BookingsService {
     return paginate(data, total, page, limit);
   }
 
+  /**
+   * Retrieve all bookings for a specific provider
+   * @param user The provider user
+   * @param query Query and pagination parameters
+   * @returns Paginated list of bookings
+   */
   async findByProvider(user: User, query: QueryBookingDto) {
     const { page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -118,6 +146,11 @@ export class BookingsService {
     return paginate(data, total, page, limit);
   }
 
+  /**
+   * Confirm a booking after successful payment
+   * @param id Booking ID
+   * @returns The confirmed booking
+   */
   async confirm(id: string) {
     const booking = await this.findOne(id);
 
@@ -140,6 +173,12 @@ export class BookingsService {
     return updated;
   }
 
+  /**
+   * Cancel an existing booking
+   * @param id Booking ID
+   * @param user User initiating the cancellation
+   * @returns The canceled booking
+   */
   async cancel(id: string, user: User) {
     const booking = await this.findOne(id);
 
@@ -172,6 +211,11 @@ export class BookingsService {
     return canceledBooking;
   }
 
+  /**
+   * Refund a canceled booking
+   * @param id Booking ID
+   * @returns The refunded booking
+   */
   async refund(id: string) {
     const booking = await this.findOne(id);
     if (booking.status === BookingStatus.REFUNDED) {
@@ -190,6 +234,9 @@ export class BookingsService {
     return updated;
   }
 
+  /**
+   * Automatically cancel pending bookings that have expired
+   */
   async cancelExpired() {
     const bookings = await this.bookingsRepository.cancelExpired();
 
