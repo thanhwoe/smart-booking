@@ -26,24 +26,25 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     switch (exception.code) {
       case 'P2025':
         payload.statusCode = HttpStatus.NOT_FOUND;
-        payload.message = 'Record not found';
+        payload.message = 'We couldn’t find what you’re looking for.';
 
         break;
       case 'P2002':
         payload.statusCode = HttpStatus.CONFLICT;
-        payload.message = 'Unique constraint violation';
+        payload.message = 'This information is already in use.';
 
         break;
 
       case 'P2003':
         payload.statusCode = HttpStatus.BAD_REQUEST;
-        payload.message = 'Foreign key constraint failed';
+        payload.message =
+          'This action can’t be completed because some related data is missing or invalid.';
 
         break;
 
       case 'P2007':
         payload.statusCode = HttpStatus.BAD_REQUEST;
-        payload.message = 'Data validation error';
+        payload.message = 'Some of the information provided is invalid.';
 
         break;
     }

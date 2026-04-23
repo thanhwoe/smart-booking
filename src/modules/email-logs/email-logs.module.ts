@@ -3,6 +3,7 @@ import { EmailLogsService } from './email-logs.service';
 import { EmailLogsController } from './email-logs.controller';
 import { EmailLogsRepository } from './email-logs.repository';
 import { EmailSuppressionsRepository } from './email-suppressions.repository';
+import { ReleaseExpiredSuppressionsTask } from './tasks/release-expired-suppressions.task';
 
 @Module({
   controllers: [EmailLogsController],
@@ -10,6 +11,7 @@ import { EmailSuppressionsRepository } from './email-suppressions.repository';
     EmailLogsService,
     EmailLogsRepository,
     EmailSuppressionsRepository,
+    ReleaseExpiredSuppressionsTask,
   ],
   exports: [EmailLogsService],
 })
