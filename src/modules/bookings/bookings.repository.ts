@@ -16,6 +16,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@app/database/prisma/prisma.service';
+import { TransactionIsolationLevel } from '@app/generated/prisma/internal/prismaNamespace';
 
 type CreateBookingData = Pick<Booking, 'slotId' | 'userId' | 'idempotencyKey'>;
 
@@ -73,68 +74,87 @@ export class BookingsRepository implements IBookingRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   create(data: CreateBookingData) {
-    return this.prisma.$transaction(async (tx) => {
-      const slot = await tx.slot.findUnique({
-        where: { id: data.slotId },
-        include: {
-          service: {
-            select: {
-              price: true,
-            },
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Acquire a pessimistic row-level lock on the slot and fetch its
+        // service price in one query via JOIN. SELECT ... FOR UPDATE blocks
+        // any concurrent transaction from modifying this row until the
+        // current transaction commits or rolls back, preventing overbooking
+        // even if the Redis distributed lock fails or expires.
+        const [lockedSlot] = await tx.$queryRaw<
+          Array<{
+            id: string;
+            status: SlotStatus;
+            booked_count: number;
+            capacity: number;
+            price: number;
+          }>
+        >`
+            SELECT s.id, s.status, s.booked_count, s.capacity, sv.price
+            FROM slots s
+            INNER JOIN services sv ON sv.id = s.service_id
+            WHERE s.id = ${data.slotId}
+            FOR UPDATE OF s
+          `;
+        if (!lockedSlot) {
+          throw new NotFoundException(`Slot with ${data.slotId} not found`);
+        }
+
+        if (lockedSlot.status === SlotStatus.CANCELLED) {
+          throw new ConflictException(`Slot ${data.slotId} is cancelled`);
+        }
+
+        // Re-check capacity using the freshly locked row values
+        if (lockedSlot.booked_count >= lockedSlot.capacity) {
+          throw new ConflictException(`Slot ${data.slotId} is full`);
+        }
+
+        const newBookedCount = lockedSlot.booked_count + 1;
+
+        // Update slot counters and status while we still hold the lock
+        await tx.slot.update({
+          where: { id: data.slotId },
+          data: {
+            bookedCount: { increment: 1 },
+            status:
+              newBookedCount >= lockedSlot.capacity
+                ? SlotStatus.FULL
+                : SlotStatus.AVAILABLE,
           },
-        },
-      });
+        });
 
-      if (!slot) {
-        throw new NotFoundException(`Slot with ${data.slotId} not found`);
-      }
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-      if (slot.status === SlotStatus.CANCELLED) {
-        throw new ConflictException(`Slot ${data.slotId} is cancelled`);
-      }
+        // Create booking
+        const booking = await tx.booking.create({
+          data: {
+            userId: data.userId,
+            slotId: data.slotId,
+            idempotencyKey: data.idempotencyKey,
+            status: BookingStatus.PENDING,
+            expiresAt,
+          },
+          include: this.include(),
+        });
 
-      if (slot.bookedCount >= slot.capacity) {
-        throw new ConflictException(`Slot ${data.slotId} is full`);
-      }
+        // Create payment
+        await tx.payment.create({
+          data: {
+            bookingId: booking.id,
+            amount: lockedSlot.price ?? 0,
+            currency: 'usd',
+            status: PaymentStatus.PENDING,
+          },
+        });
 
-      // Optimistic update slot
-      await tx.slot.update({
-        where: { id: data.slotId },
-        data: {
-          bookedCount: { increment: 1 },
-          status:
-            slot.bookedCount + 1 >= slot.capacity
-              ? SlotStatus.FULL
-              : SlotStatus.AVAILABLE,
-        },
-      });
-
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-      // Create booking
-      const booking = await tx.booking.create({
-        data: {
-          userId: data.userId,
-          slotId: data.slotId,
-          idempotencyKey: data.idempotencyKey,
-          status: BookingStatus.PENDING,
-          expiresAt,
-        },
-        include: this.include(),
-      });
-
-      // Create payment
-      await tx.payment.create({
-        data: {
-          bookingId: booking.id,
-          amount: slot.service.price ?? 0,
-          currency: 'usd',
-          status: PaymentStatus.PENDING,
-        },
-      });
-
-      return booking;
-    });
+        return booking;
+      },
+      {
+        // Use SERIALIZABLE isolation for the strongest guarantee:
+        // concurrent transactions are fully serialized at the DB level.
+        isolationLevel: TransactionIsolationLevel.Serializable,
+      },
+    );
   }
 
   update(id: string, data: BookingUpdateInput): Promise<Booking> {
