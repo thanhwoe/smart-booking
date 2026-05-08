@@ -1,26 +1,36 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { minutes, seconds, ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { PrismaModule } from './database/prisma/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
-import { TrackInterceptor } from './interceptors/track.interceptor';
-import { SharedModule } from './modules/shared/shared.module';
-import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
-import { SlotsModule } from './modules/slots/slots.module';
-import { ServicesModule } from './modules/services/services.module';
-import { BookingsModule } from './modules/bookings/bookings.module';
-import { EmailLogsModule } from './modules/email-logs/email-logs.module';
-import { PaymentsModule } from './modules/payments/payments.module';
-import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
-import { CustomThrottlerGuard } from './guards/throttler.guard';
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
+
+// --- Infrastructure Layer ---
+import { DatabaseModule } from '@infrastructure/database/database.module';
+import { AuthModule } from '@infrastructure/auth/auth.module';
+import { RedisModule } from '@infrastructure/redis/redis.module';
+import { CacheModule } from '@infrastructure/cache/cache.module';
+import { LockModule } from '@infrastructure/lock/lock.module';
+import { QueueModule } from '@infrastructure/queue/queue.module';
+import { EmailModule } from '@infrastructure/email/email.module';
+import { TrackingModule } from '@infrastructure/tracking/tracking.module';
+import { StripeModule } from '@infrastructure/payment-gateway/stripe/stripe.module';
+
+// --- Presentation Layer (HTTP) ---
+import { UsersModule } from '@presentation/http/users/users.module';
+import { SlotsModule } from '@presentation/http/slots/slots.module';
+import { ServicesModule } from '@presentation/http/services/services.module';
+import { BookingsModule } from '@presentation/http/bookings/bookings.module';
+import { PaymentsModule } from '@presentation/http/payments/payments.module';
+import { EmailLogsModule } from '@presentation/http/email-logs/email-logs.module';
+
+// --- Global Presentation Elements ---
+import { JwtAuthGuard } from '@presentation/guards/jwt-auth.guard';
+import { RolesGuard } from '@presentation/guards/roles.guard';
+import { CustomThrottlerGuard } from '@presentation/guards/throttler.guard';
+import { TrackInterceptor } from '@presentation/interceptors/track.interceptor';
+import { ErrorLoggingInterceptor } from '@presentation/interceptors/error-logging.interceptor';
+import { HttpCacheInterceptor } from '@presentation/interceptors/http-cache.interceptor';
 
 @Module({
   imports: [
@@ -30,13 +40,11 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          // anti-spam
           name: 'burst',
           ttl: seconds(1),
           limit: 10,
         },
         {
-          // anti-abuse
           name: 'sustained',
           ttl: minutes(1),
           limit: 100,
@@ -45,19 +53,27 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
     }),
     SentryModule.forRoot(),
     ScheduleModule.forRoot(),
-    PrismaModule,
+
+    // Framework Setup & Infrastructure
+    DatabaseModule,
+    RedisModule,
+    CacheModule,
+    LockModule,
+    QueueModule,
+    EmailModule,
+    TrackingModule,
     AuthModule,
+    StripeModule,
+
+    // Feature APIs
     UsersModule,
-    SharedModule,
     SlotsModule,
     ServicesModule,
     BookingsModule,
-    EmailLogsModule,
     PaymentsModule,
+    EmailLogsModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_FILTER,
       useClass: SentryGlobalFilter,

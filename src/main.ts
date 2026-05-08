@@ -9,9 +9,9 @@ import {
 } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
-import { PrismaExceptionFilter } from './filters/prisma-exceptions.filter';
 import { formatValidationErrors } from './utils/format';
+import { AllExceptionsFilter } from './presentation/filters/all-exceptions.filter';
+import { PrismaExceptionFilter } from './presentation/filters/prisma-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
