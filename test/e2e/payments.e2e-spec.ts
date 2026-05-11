@@ -11,7 +11,7 @@ import { createTestService } from '../factories/service.factory';
 import { createTestSlot } from '../factories/slot.factory';
 import { createTestBooking } from '../factories/booking.factory';
 import { mockStripeClient, resetAllMocks } from '../setup/mock-providers';
-import { PaymentStatus } from '@app/generated/prisma/client';
+import { PaymentStatus } from '@domain/payment/payment.entity';
 
 describe('Payments E2E', () => {
   let app: INestApplication;

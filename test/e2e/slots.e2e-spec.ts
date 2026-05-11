@@ -10,7 +10,7 @@ import {
 import { createTestService } from '../factories/service.factory';
 import { createTestSlot } from '../factories/slot.factory';
 import { resetAllMocks } from '../setup/mock-providers';
-import { SlotStatus } from '@app/generated/prisma/client';
+import { SlotStatus } from '@domain/slot/slot.entity';
 
 describe('Slots E2E', () => {
   let app: INestApplication;

@@ -11,7 +11,8 @@ import { createTestService } from '../factories/service.factory';
 import { createTestSlot } from '../factories/slot.factory';
 import { createTestBooking } from '../factories/booking.factory';
 import { resetAllMocks } from '../setup/mock-providers';
-import { BookingStatus, SlotStatus } from '@app/generated/prisma/client';
+import { BookingStatus } from '@domain/booking/booking.entity';
+import { SlotStatus } from '@domain/slot/slot.entity';
 
 describe('Bookings E2E', () => {
   let app: INestApplication;
@@ -140,7 +141,7 @@ describe('Bookings E2E', () => {
     });
   });
 
-  describe('GET /api/v1/bookings', () => {
+  describe('GET /api/v1/bookings/me', () => {
     it('should return user bookings', async () => {
       const customer = await createTestUser(prisma);
       const provider = await createTestProvider(prisma);
@@ -158,7 +159,7 @@ describe('Bookings E2E', () => {
       });
 
       const res = await request(app.getHttpServer())
-        .get('/api/v1/bookings')
+        .get('/api/v1/bookings/me')
         .expect(200);
 
       expect(res.body).toHaveProperty('data');
@@ -166,7 +167,7 @@ describe('Bookings E2E', () => {
     });
   });
 
-  describe('GET /api/v1/bookings/all', () => {
+  describe('GET /api/v1/bookings', () => {
     it('should return all bookings for admin', async () => {
       const admin = await createTestAdmin(prisma);
       const customer = await createTestUser(prisma);
@@ -184,7 +185,7 @@ describe('Bookings E2E', () => {
       setTestUser(admin);
 
       const res = await request(app.getHttpServer())
-        .get('/api/v1/bookings/all')
+        .get('/api/v1/bookings')
         .expect(200);
 
       expect(res.body).toHaveProperty('data');
@@ -196,7 +197,7 @@ describe('Bookings E2E', () => {
       setTestUser(customer);
 
       await request(app.getHttpServer())
-        .get('/api/v1/bookings/all')
+        .get('/api/v1/bookings')
         .expect(403);
     });
   });

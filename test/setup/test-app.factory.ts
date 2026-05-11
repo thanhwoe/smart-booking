@@ -7,7 +7,7 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { AppModule } from '@app/app.module';
-import { PrismaService } from '@app/database/prisma/prisma.service';
+import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 import { TestPrismaService } from './test-prisma.service';
 import {
   mockCacheService,
@@ -17,17 +17,17 @@ import {
   mockStripeClient,
   mockQueue,
 } from './mock-providers';
-import { ICacheService } from '@app/interfaces/cache.interface';
-import { RedisClient } from '@app/modules/shared/redis/redis.config';
-import { PostHogClient } from '@app/modules/shared/track/posthog/posthob.config';
-import { CLERK_CLIENT } from '@app/modules/auth/clerk/clerk-client.provider';
-import { STRIPE_CLIENT } from '@app/modules/payments/stripe/stripe-client.provider';
-import { JwtAuthGuard } from '@app/guards/jwt-auth.guard';
-import { User, UserRole } from '@app/generated/prisma/client';
+import { ICacheService } from '@application/common/ports/cache.port';
+import { RedisClient } from '@infrastructure/redis/redis.config';
+import { PostHogClient } from '@infrastructure/tracking/posthog/posthog.config';
+import { CLERK_CLIENT } from '@infrastructure/auth/clerk/clerk-client.provider';
+import { STRIPE_CLIENT } from '@infrastructure/payment-gateway/stripe/stripe-client.provider';
+import { JwtAuthGuard } from '@presentation/guards/jwt-auth.guard';
+import { User, UserRole } from '@domain/user/user.entity';
 import { getQueueToken } from '@nestjs/bullmq';
-import { QUEUES } from '@app/modules/shared/queue/queue.constants';
-import { EmailProcessor } from '@app/modules/shared/queue/processors/email.processor';
-import { DistributedLockService } from '@app/modules/shared/lock/distributed-lock.service';
+import { QUEUES } from '@infrastructure/queue/queue.constants';
+import { EmailProcessor } from '@infrastructure/queue/processors/email.processor';
+import { ILockService } from '@application/common/ports/lock.port';
 
 /**
  * The mock guard that bypasses Clerk JWT verification.
@@ -59,7 +59,7 @@ export async function createTestApp(): Promise<{
   moduleBuilder
     .overrideProvider(PrismaService)
     .useValue(prisma)
-    .overrideProvider(DistributedLockService)
+    .overrideProvider(ILockService)
     .useValue({
       withLock: jest.fn().mockImplementation(async (id, fn) => fn()),
       onModuleInit: jest.fn(),

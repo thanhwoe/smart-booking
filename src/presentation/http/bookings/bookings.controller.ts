@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
@@ -27,6 +28,7 @@ import { FindAllBookingsUseCase } from '@application/booking/use-cases/find-all-
 import { FindBookingUseCase } from '@application/booking/use-cases/find-booking.use-case';
 import { CancelBookingUseCase } from '@application/booking/use-cases/cancel-booking.use-case';
 import { AdminOnly, Roles } from '@app/presentation/decorators/roles.decorator';
+import { ConfirmBookingUseCase } from '@app/application/booking/use-cases/confirm-booking.use-case';
 
 @Controller('bookings')
 export class BookingsController {
@@ -35,6 +37,7 @@ export class BookingsController {
     private readonly findAllBookingsUseCase: FindAllBookingsUseCase,
     private readonly findBookingUseCase: FindBookingUseCase,
     private readonly cancelBookingUseCase: CancelBookingUseCase,
+    private readonly confirmBookingUseCase: ConfirmBookingUseCase,
   ) {}
 
   @Post()
@@ -107,7 +110,17 @@ export class BookingsController {
     return this.findBookingUseCase.execute(id);
   }
 
-  @Patch(':id/cancel')
+  @Patch(':id')
+  @ApiOkResponse({
+    summary: 'Confirm booking',
+    response: ResponseBookingDto,
+  })
+  @Roles(UserRole.ADMIN, UserRole.PROVIDER)
+  confirm(@Param('id') id: string) {
+    return this.confirmBookingUseCase.execute(id);
+  }
+
+  @Delete(':id')
   @ApiOkResponse({
     summary: 'Cancel booking',
     response: ResponseBookingDto,

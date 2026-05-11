@@ -1,15 +1,16 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IPaymentRepository } from '@domain/payment/payment.repository';
 import { IPaymentGateway } from '@application/payment/ports/payment-gateway.port';
 import { IQueueService } from '@application/common/ports/queue.port';
 import { RefundBookingUseCase } from '@application/booking/use-cases/refund-booking.use-case';
 import { PaymentStatus } from '@domain/payment/payment.entity';
 import type { User } from '@domain/user/user.entity';
+import {
+  PaymentNoStripePaymentIntentError,
+  PaymentNotFoundError,
+  PaymentNotOnRefundableStatusError,
+  PaymentNotOwnError,
+} from '@app/domain/payment/payment.errors';
 
 @Injectable()
 export class RefundPaymentUseCase {
@@ -25,17 +26,14 @@ export class RefundPaymentUseCase {
 
   async execute(bookingId: string) {
     const payment = await this.paymentRepository.findByBookingId(bookingId);
-    if (!payment)
-      throw new NotFoundException('Payment record not found for this booking');
+    if (!payment) throw new PaymentNotFoundError();
 
     if (payment.status === PaymentStatus.REFUNDED) return payment;
     if (payment.status !== PaymentStatus.PAID) {
-      throw new BadRequestException('Only PAID payments can be refunded');
+      throw new PaymentNotOnRefundableStatusError();
     }
     if (!payment.stripePaymentIntent) {
-      throw new BadRequestException(
-        'No Stripe payment intent on record — cannot refund',
-      );
+      throw new PaymentNoStripePaymentIntentError();
     }
 
     await this.paymentGateway.createRefund(
@@ -65,10 +63,9 @@ export class RefundPaymentUseCase {
 
   async findOne(bookingId: string, user: User) {
     const payment = await this.paymentRepository.findByBookingId(bookingId);
-    if (!payment)
-      throw new NotFoundException('Payment record not found for this booking');
+    if (!payment) throw new PaymentNotFoundError();
     if (payment.booking.user.id !== user.id) {
-      throw new BadRequestException('You can only view your own payments');
+      throw new PaymentNotOwnError();
     }
     return payment;
   }

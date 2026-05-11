@@ -1,8 +1,8 @@
-import { ICacheService } from '@app/interfaces/cache.interface';
-import { PostHogClient } from '@app/modules/shared/track/posthog/posthob.config';
-import { RedisClient } from '@app/modules/shared/redis/redis.config';
-import { CLERK_CLIENT } from '@app/modules/auth/clerk/clerk-client.provider';
-import { STRIPE_CLIENT } from '@app/modules/payments/stripe/stripe-client.provider';
+import { ICacheService } from '@application/common/ports/cache.port';
+import { PostHogClient } from '@infrastructure/tracking/posthog/posthog.config';
+import { RedisClient } from '@infrastructure/redis/redis.config';
+import { CLERK_CLIENT } from '@infrastructure/auth/clerk/clerk-client.provider';
+import { STRIPE_CLIENT } from '@infrastructure/payment-gateway/stripe/stripe-client.provider';
 import { Provider } from '@nestjs/common';
 
 // ---------- Cache ----------
@@ -74,6 +74,7 @@ export const mockStripeClient = {
       create: jest.fn().mockResolvedValue({
         id: 'cs_test_123',
         url: 'https://checkout.stripe.com/test',
+        client_secret: 'cs_test_123_secret',
       }),
     },
   },

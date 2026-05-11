@@ -1,4 +1,8 @@
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 export class BookingNotFoundError extends NotFoundException {
   constructor(id: string) {
@@ -18,7 +22,7 @@ export class BookingConfirmNotPaidError extends BadRequestException {
   }
 }
 
-export class BookingCannotCancelNoOwnError extends BadRequestException {
+export class BookingCannotCancelNoOwnError extends ForbiddenException {
   constructor() {
     super('You can only cancel your own bookings');
   }
