@@ -1,9 +1,6 @@
-import type {
-  Booking,
-  BookingStatus,
-  Payment,
-  Service,
-} from './booking.entity';
+import { Payment } from '../payment/payment.entity';
+import { Service } from '../service/service.entity';
+import type { Booking, BookingStatus } from './booking.entity';
 
 // ─── Return types ────────────────────────────────────────────────────────
 
