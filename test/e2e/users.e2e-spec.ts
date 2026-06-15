@@ -1,16 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TestPrismaService } from '../setup/test-prisma.service';
-import {
-  createTestApp,
-  makeAdmin,
-  makeUser,
-  setTestUser,
-} from '../setup/test-app.factory';
-import {
-  createTestUser,
-  createTestAdmin,
-} from '../factories/user.factory';
+import { createTestApp, setTestUser } from '../setup/test-app.factory';
+import { createTestUser, createTestAdmin } from '../factories/user.factory';
 import { resetAllMocks } from '../setup/mock-providers';
 
 describe('Users E2E', () => {

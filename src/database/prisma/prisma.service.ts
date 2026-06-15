@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { PrismaClient } from '@app/generated/prisma/client';
 import { TrackService } from '@app/modules/shared/track/track.service';
 import {
