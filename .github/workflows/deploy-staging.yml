@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: staging
+    env:
+      DOPPLER_PROJECT: ${{ vars.DOPPLER_PROJECT || 'smart-booking' }}
+      DOPPLER_CONFIG: ${{ vars.DOPPLER_CONFIG_STAGING || 'staging' }}
+      RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}
 
     steps:
       - name: Checkout
@@ -26,18 +30,31 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli@4
 
+      - name: Validate Doppler access
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
+        run: |
+          if [ -z "${DOPPLER_TOKEN}" ]; then
+            echo "::error::Missing GitHub secret DOPPLER_TOKEN_STAGING"
+            exit 1
+          fi
+
+          doppler secrets get APP_URL --plain \
+            --project "${DOPPLER_PROJECT}" \
+            --config "${DOPPLER_CONFIG}" >/dev/null
+
       - name: Build and deploy Docker image
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           doppler run \
-            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
-            --config staging \
+            --project "${DOPPLER_PROJECT}" \
+            --config "${DOPPLER_CONFIG}" \
             -- \
             railway up \
               --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
-              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              --environment "${RAILWAY_ENVIRONMENT}" \
               --detach
 
       - name: Run Prisma migrations
@@ -46,12 +63,12 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           doppler run \
-            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
-            --config staging \
+            --project "${DOPPLER_PROJECT}" \
+            --config "${DOPPLER_CONFIG}" \
             -- \
             railway run \
               --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
-              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              --environment "${RAILWAY_ENVIRONMENT}" \
               -- npx prisma migrate deploy
 
       - name: Smoke tests
@@ -59,8 +76,8 @@ jobs:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
         run: |
           APP_URL="$(doppler secrets get APP_URL --plain \
-            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
-            --config staging)"
+            --project "${DOPPLER_PROJECT}" \
+            --config "${DOPPLER_CONFIG}")"
 
           echo "Running smoke tests against ${APP_URL}"
 
