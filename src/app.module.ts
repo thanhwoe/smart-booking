@@ -21,6 +21,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { HttpCacheInterceptor } from './interceptors/http-cache.interceptor';
 import { CustomThrottlerGuard } from './guards/throttler.guard';
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
     BookingsModule,
     EmailLogsModule,
     PaymentsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

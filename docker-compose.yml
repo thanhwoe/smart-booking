@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: smart-booking-api
     environment:
       - PORT=${PORT}
@@ -18,10 +18,11 @@ services:
     networks:
       - smart-booking-net
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1']
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:${PORT:-3000}/api/v1/health/live']
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   redis:
     image: redis:alpine

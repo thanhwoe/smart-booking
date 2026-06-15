@@ -1,0 +1,78 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Railway Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@4
+
+      - name: Build and deploy Docker image
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          doppler run \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config staging \
+            -- \
+            railway up \
+              --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              --detach
+
+      - name: Run Prisma migrations
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          doppler run \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config staging \
+            -- \
+            railway run \
+              --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              -- npx prisma migrate deploy
+
+      - name: Smoke tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_STAGING }}
+        run: |
+          APP_URL="$(doppler secrets get APP_URL --plain \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config staging)"
+
+          echo "Running smoke tests against ${APP_URL}"
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS "${APP_URL}/api/v1/health/ready"; then
+              echo "Smoke test passed"
+              exit 0
+            fi
+
+            echo "Waiting for staging deployment... (${attempt}/30)"
+            sleep 10
+          done
+
+          echo "Smoke test failed: health check did not pass within 5 minutes"
+          exit 1

@@ -1,0 +1,106 @@
+name: Deploy Production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Railway Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@4
+
+      - name: Build and deploy Docker image
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_PRODUCTION }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          doppler run \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config production \
+            -- \
+            railway up \
+              --service "${{ secrets.RAILWAY_SERVICE_ID_PRODUCTION }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_PRODUCTION || 'production' }}" \
+              --detach
+
+      - name: Run Prisma migrations
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_PRODUCTION }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          doppler run \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config production \
+            -- \
+            railway run \
+              --service "${{ secrets.RAILWAY_SERVICE_ID_PRODUCTION }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_PRODUCTION || 'production' }}" \
+              -- npx prisma migrate deploy
+
+      - name: Verify production health
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_PRODUCTION }}
+        run: |
+          APP_URL="$(doppler secrets get APP_URL --plain \
+            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --config production)"
+
+          echo "Verifying production health at ${APP_URL}"
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS "${APP_URL}/api/v1/health/ready"; then
+              echo "Production health check passed"
+              exit 0
+            fi
+
+            echo "Waiting for production deployment... (${attempt}/30)"
+            sleep 10
+          done
+
+          echo "Production health verification failed"
+          exit 1
+
+      - name: Rollback guidance
+        if: failure()
+        run: |
+          cat <<'EOF'
+          ::error::Production deployment failed.
+
+          Rollback options:
+          1. Railway Dashboard → Service → Deployments → Roll back to the previous deployment
+          2. Railway CLI:
+             railway rollback --service $RAILWAY_SERVICE_ID_PRODUCTION --environment production
+          3. Redeploy a known-good commit:
+             git checkout <previous-sha>
+             railway up --service $RAILWAY_SERVICE_ID_PRODUCTION --environment production --detach
+
+          Database note:
+          - If migrations partially applied, inspect `_prisma_migrations` before retrying.
+          - Do not run `prisma migrate reset` in production.
+
+          See docs/railway-setup.md for the full rollback runbook.
+          EOF

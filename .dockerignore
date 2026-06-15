@@ -1,0 +1,48 @@
+# Dependencies and build output
+node_modules
+dist
+coverage
+.nyc_output
+
+# Git
+.git
+.gitignore
+.github
+
+# Environment and secrets
+.env
+.env.*
+!.env.test
+!.env.example
+
+# Documentation
+docs
+*.md
+!README.md
+
+# IDE and OS
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+
+# Tests (not needed in production image)
+test
+**/*.spec.ts
+**/*.e2e-spec.ts
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Logs and temp files
+logs
+*.log
+.temp
+.tmp
+report.*
+
+# CI artifacts
+*.tgz
