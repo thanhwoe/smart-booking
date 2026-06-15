@@ -24,11 +24,13 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       catchError((err) => {
-        this.trackService.error(err, {
+        const error = err instanceof Error ? err : new Error(String(err));
+
+        this.trackService.error(error, {
           distinctId: 'system',
           properties: {
-            error: err.message,
-            stack: err.stack,
+            error: error.message,
+            stack: error.stack,
             method,
             url,
             body,
@@ -41,8 +43,8 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
             JSON.stringify(
               {
                 body,
-                error: err.message,
-                stack: err.stack,
+                error: error.message,
+                stack: error.stack,
               },
               null,
               2,
