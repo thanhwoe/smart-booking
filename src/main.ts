@@ -34,7 +34,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Smart Booking API Document')
     .setDescription('The API documentation for the Smart Booking project')
-    .setVersion('1.0')
+    .setVersion('2.0')
     .addBasicAuth()
     .addBearerAuth()
     .build();
