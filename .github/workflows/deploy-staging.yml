@@ -44,12 +44,12 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
         run: |
           doppler run \
-            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --project "${{ vars.DOPPLER_PROJECT }}" \
             --config staging \
             -- \
             railway up \
               --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
-              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING }}" \
               --detach
 
       - name: Run Prisma migrations
@@ -58,10 +58,10 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
         run: |
           doppler run \
-            --project "${{ vars.DOPPLER_PROJECT || 'smart-booking' }}" \
+            --project "${{ vars.DOPPLER_PROJECT }}" \
             --config staging \
             -- \
             railway run \
               --service "${{ secrets.RAILWAY_SERVICE_ID_STAGING }}" \
-              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING || 'staging' }}" \
+              --environment "${{ vars.RAILWAY_ENVIRONMENT_STAGING }}" \
               -- yarn prisma migrate deploy

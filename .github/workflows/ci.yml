@@ -74,4 +74,4 @@ jobs:
           STRIPE_WEBHOOK_SECRET: whsec_fake
 
       - name: Docker build validation
-        run: docker build --target production -t smart-booking:ci-${{ github.sha }} .
+        run: docker build --target production .
