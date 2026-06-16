@@ -9,7 +9,7 @@ export const redisFactory = (config: ConfigService) => {
     port: config.getOrThrow<number>('REDIS_PORT'),
 
     //   TODO: production
-    //   password: configService.get<string>('REDIS_PASSWORD'),
+    password: config.get<string>('REDIS_PASSWORD'),
     //   tls: configService.get<boolean>('REDIS_TLS') ? {} : undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: true,

@@ -10,10 +10,12 @@ export const mockCacheService: ICacheService = {
   get: jest.fn().mockResolvedValue(null),
   set: jest.fn().mockResolvedValue(undefined),
   del: jest.fn().mockResolvedValue(undefined),
-  wrap: jest.fn().mockImplementation(
-    async (_key: string, _ttl: number, fetcher: () => Promise<unknown>) =>
-      fetcher(),
-  ),
+  wrap: jest
+    .fn()
+    .mockImplementation(
+      async (_key: string, _ttl: number, fetcher: () => Promise<unknown>) =>
+        fetcher(),
+    ),
 };
 
 export const MockCacheProvider: Provider = {
