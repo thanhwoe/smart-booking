@@ -4,6 +4,7 @@ export const getBullMQConfig = (config: ConfigService) => ({
   connection: {
     host: config.getOrThrow<string>('REDIS_HOST'),
     port: config.getOrThrow<number>('REDIS_PORT'),
+    password: config.get<string>('REDIS_PASSWORD'),
   },
   defaultJobOptions: {
     attempts: 3, // Max number of attempts for failed jobs
