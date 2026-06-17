@@ -50,7 +50,7 @@ NestJS API
 - Node.js 22+
 - Yarn 1.x
 - Docker + Docker Compose
-- [Doppler CLI](https://docs.doppler.com/docs/install-cli) (recommended)
+- [Doppler CLI](https://docs.doppler.com/docs/install-cli)
 - Stripe CLI (for local webhook testing)
 - Clerk, Resend, and Supabase accounts
 
@@ -77,8 +77,6 @@ doppler login
 doppler setup --project smart-booking --config development
 doppler run -- yarn start:dev
 ```
-
-See [docs/doppler-setup.md](./docs/doppler-setup.md) for the full secrets list and setup.
 
 ### 3. Start local infrastructure
 
@@ -123,11 +121,11 @@ stripe listen --forward-to localhost:3000/api/v1/payments/webhook
 
 ## CI/CD
 
-| Workflow | Trigger | Action |
-|----------|---------|--------|
-| [CI](.github/workflows/ci.yml) | PR + push to `main`/`develop` | Lint, typecheck, unit tests, build, Docker validation |
-| [Deploy Staging](.github/workflows/deploy-staging.yml) | Push to `develop` | Deploy to Railway staging, migrate, smoke test |
-| [Deploy Production](.github/workflows/deploy-production.yml) | CI success on `main` | Deploy to Railway production, migrate, health verify |
+| Workflow                                                     | Trigger                       | Action                                                |
+| ------------------------------------------------------------ | ----------------------------- | ----------------------------------------------------- |
+| [CI](.github/workflows/ci.yml)                               | PR + push to `main`/`develop` | Lint, typecheck, unit tests, build, Docker validation |
+| [Deploy Staging](.github/workflows/deploy-staging.yml)       | Push to `develop`             | Deploy to Railway staging, migrate, smoke test        |
+| [Deploy Production](.github/workflows/deploy-production.yml) | CI success on `main`          | Deploy to Railway production, migrate, health verify  |
 
 ### Branching
 
@@ -135,26 +133,15 @@ stripe listen --forward-to localhost:3000/api/v1/payments/webhook
 - `main` → production
 - Pull requests required — no direct pushes to protected branches
 
-See [docs/branching-strategy.md](./docs/branching-strategy.md).
-
-### First-time infrastructure setup
-
-Manual steps you must complete outside this repository:
-
-1. [Doppler project and secrets](./docs/doppler-setup.md)
-2. [Railway staging + production services](./docs/railway-setup.md)
-3. GitHub Actions secrets (Doppler tokens, Railway token, service IDs)
-4. GitHub branch protection for `main` and `develop`
-
 ---
 
 ## Health Checks
 
-| Endpoint | Auth | Description |
-|----------|------|-------------|
-| `GET /api/v1/health/live` | Public | Liveness probe |
+| Endpoint                   | Auth   | Description            |
+| -------------------------- | ------ | ---------------------- |
+| `GET /api/v1/health/live`  | Public | Liveness probe         |
 | `GET /api/v1/health/ready` | Public | Readiness (DB + Redis) |
-| `GET /api/v1/health` | Public | Readiness alias |
+| `GET /api/v1/health`       | Public | Readiness alias        |
 
 Used by Docker, Railway, and deployment smoke tests.
 
@@ -189,11 +176,11 @@ All endpoints require `Authorization: Bearer <clerk_jwt>` except webhooks and he
 
 ### Webhooks (public)
 
-| Provider | Endpoint |
-|----------|----------|
-| Clerk | `/api/v1/auth/webhook` |
-| Stripe | `/api/v1/payments/webhook` |
-| Resend | `/api/v1/email/webhook` |
+| Provider | Endpoint                   |
+| -------- | -------------------------- |
+| Clerk    | `/api/v1/auth/webhook`     |
+| Stripe   | `/api/v1/payments/webhook` |
+| Resend   | `/api/v1/email/webhook`    |
 
 ---
 
@@ -240,20 +227,20 @@ railway.json
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `yarn start:dev` | Development server with watch mode |
-| `yarn build` | Production build (runs `prisma generate` first) |
-| `yarn start:prod` | Run compiled app |
-| `yarn lint:check` | ESLint without auto-fix (CI) |
-| `yarn lint` | ESLint with auto-fix |
-| `yarn typecheck` | TypeScript check without emit |
-| `yarn test:unit` | Unit tests |
-| `yarn test:e2e` | E2E tests (requires Redis + postgres_test) |
-| `yarn db:generate` | Generate Prisma client |
-| `yarn db:migrate` | Create migration (`yarn db:migrate <name>`) |
-| `yarn docker:up` | Start Docker Compose stack |
-| `yarn docker:down` | Tear down Docker Compose stack |
+| Script             | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `yarn start:dev`   | Development server with watch mode              |
+| `yarn build`       | Production build (runs `prisma generate` first) |
+| `yarn start:prod`  | Run compiled app                                |
+| `yarn lint:check`  | ESLint without auto-fix (CI)                    |
+| `yarn lint`        | ESLint with auto-fix                            |
+| `yarn typecheck`   | TypeScript check without emit                   |
+| `yarn test:unit`   | Unit tests                                      |
+| `yarn test:e2e`    | E2E tests (requires Redis + postgres_test)      |
+| `yarn db:generate` | Generate Prisma client                          |
+| `yarn db:migrate`  | Create migration (`yarn db:migrate <name>`)     |
+| `yarn docker:up`   | Start Docker Compose stack                      |
+| `yarn docker:down` | Tear down Docker Compose stack                  |
 
 ---
 
@@ -281,11 +268,3 @@ yarn docker:up
 # Production image build
 docker build --target production -t smart-booking:local .
 ```
-
----
-
-## Documentation
-
-- [Branching Strategy](./docs/branching-strategy.md)
-- [Doppler Setup](./docs/doppler-setup.md)
-- [Railway Deployment](./docs/railway-setup.md)
