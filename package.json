@@ -31,7 +31,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "docker:down": "docker compose down -v",
     "docker:build": "docker compose build --no-cache",
-    "docker:up": "docker compose up"
+    "docker:up": "docker compose up",
+    "doppler:dev": "doppler run --project smart-booking --config dev docker compose up"
   },
   "dependencies": {
     "@clerk/backend": "^3.2.4",
