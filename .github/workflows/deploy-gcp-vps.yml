@@ -36,10 +36,14 @@ jobs:
         with:
           workload_identity_provider: 'projects/200926886242/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
           service_account: 'github-actions-deploy@project-7144a0e1-eaa5-4a10-a51.iam.gserviceaccount.com'
+          token_format: access_token
 
       - name: Configure Docker for GCR
-        run: |
-          gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+        uses: docker/login-action@v3
+        with:
+          registry: asia-southeast1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
 
       - name: Build and push Docker image
         env:
