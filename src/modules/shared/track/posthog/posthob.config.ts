@@ -8,5 +8,6 @@ export const postHogFactory = (config: ConfigService) => {
     host: 'https://eu.i.posthog.com',
     flushAt: 1,
     flushInterval: 0,
+    disabled: true,
   });
 };
