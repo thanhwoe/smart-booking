@@ -63,12 +63,18 @@ jobs:
         env:
           IMAGE: asia-southeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smart-booking/app
           SHA: ${{ github.event.workflow_run.head_sha }}
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: IMAGE,SHA
+          envs: IMAGE,SHA,ACCESS_TOKEN
           script: |
+            echo $ACCESS_TOKEN | docker login \
+              -u oauth2accesstoken \
+              --password-stdin \
+              asia-southeast1-docker.pkg.dev
+
             docker pull $IMAGE:$SHA
 
             docker stop smart-booking || true
