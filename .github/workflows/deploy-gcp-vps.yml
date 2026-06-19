@@ -1,0 +1,84 @@
+name: Deploy GCP VPS Production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+concurrency:
+  group: deploy-gcp-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to GCP VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-deploy@project-7144a0e1-eaa5-4a10-a51.iam.gserviceaccount.com'
+
+      - name: Configure Docker for GCR
+        run: |
+          gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        env:
+          IMAGE: asia-southeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smart-booking/app
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          docker build --target production \
+            -t $IMAGE:$SHA \
+            -t $IMAGE:latest \
+            .
+          docker push $IMAGE:$SHA
+          docker push $IMAGE:latest
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE: asia-southeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smart-booking/app
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE,SHA
+          script: |
+            docker pull $IMAGE:$SHA
+
+            docker stop smart-booking || true
+            docker rm smart-booking || true
+
+            docker run -d \
+              --name smart-booking \
+              --restart unless-stopped \
+              -p 127.0.0.1:3000:3000 \
+              --env-file /home/$USER/.env.production \
+              $IMAGE:$SHA
+
+            docker exec smart-booking \
+              node_modules/.bin/prisma migrate deploy
+
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          sleep 15
+          curl -fsS http://${{ secrets.VPS_HOST }}/api/v1/health/live \
+            || (echo "Health check failed!" && exit 1)
