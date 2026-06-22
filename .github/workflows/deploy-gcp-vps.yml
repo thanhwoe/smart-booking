@@ -109,15 +109,16 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            docker rm smart-booking-nginx || true
+            docker inspect smart-booking-nginx >/dev/null 2>&1 \
+              || docker run -d \
+                  --name smart-booking-nginx \
+                  --network smart-booking-net \
+                  --restart unless-stopped \
+                  -p 80:80 \
+                  -v /home/${{ secrets.VPS_USER }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+                  nginx:alpine
 
-            docker run -d \
-              --name smart-booking-nginx \
-              --network smart-booking-net \
-              --restart unless-stopped \
-              -p 80:80 \
-              -v /home/${{ secrets.VPS_USER }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
-              nginx:alpine
+            docker exec smart-booking-nginx nginx -s reload
 
       - name: Health check
         run: |
