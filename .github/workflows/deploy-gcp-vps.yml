@@ -84,7 +84,6 @@ jobs:
               --name smart-booking \
               --network smart-booking-net \
               --restart unless-stopped \
-              -p 127.0.0.1:3000:3000 \
               --env-file /home/$USER/.env.production \
               $IMAGE:$SHA
 
@@ -92,6 +91,34 @@ jobs:
               node_modules/.bin/prisma migrate deploy
 
             docker image prune -f
+
+      - name: Copy Nginx config
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: 'nginx/nginx.conf'
+          target: '/home/${{ secrets.VPS_USER }}/nginx/'
+          strip_components: 1
+
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            docker inspect smart-booking-nginx >/dev/null 2>&1 \
+              || docker run -d \
+                  --name smart-booking-nginx \
+                  --network smart-booking-net \
+                  --restart unless-stopped \
+                  -p 80:80 \
+                  -v /home/${{ secrets.VPS_USER }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+                  nginx:alpine
+
+            docker exec smart-booking-nginx nginx -s reload
 
       - name: Health check
         run: |
