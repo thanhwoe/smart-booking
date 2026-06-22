@@ -119,8 +119,6 @@ jobs:
               -v /home/${{ secrets.VPS_USER }}/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
               nginx:alpine
 
-            docker exec smart-booking-nginx nginx -s reload
-
       - name: Health check
         run: |
           sleep 15
